@@ -52,10 +52,8 @@ def load_config() -> Config:
 async def main():
     """Initialize the First machine driver and NATS client, then run the edge runner."""
     config = load_config()
-    logger.info(
-        "Config: machine_id=%s, qubot_port=%s, sartorius_port=%s, camera_index=%s",
-        config.machine_id, config.qubot_port, config.sartorius_port, config.camera_index,
-    )
+    logger.info("Config loaded for %s", config.machine_id)
+    logger.info("Full config: %s", config.model_dump())
 
     logger.info("Initializing machine driver")
     driver = First(

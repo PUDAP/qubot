@@ -1,8 +1,8 @@
 services:
   first:
     build:
-      context: ../../..
-      dockerfile: machines/first/edge/Dockerfile
+      context: ..
+      dockerfile: edge/Dockerfile
     image: ghcr.io/pudap/first-edge:latest
     container_name: first-edge
     restart: unless-stopped
@@ -12,13 +12,6 @@ services:
       - ${QUBOT_PORT:-/dev/ttyACM0}:${QUBOT_PORT:-/dev/ttyACM0}  # Qubot port (set QUBOT_PORT env var to override)
       - ${SARTORIUS_PORT:-/dev/ttyUSB0}:${SARTORIUS_PORT:-/dev/ttyUSB0}  # Sartorius port (set SARTORIUS_PORT env var to override)
       - /dev/video${CAMERA_INDEX:-0}:/dev/video${CAMERA_INDEX:-0}  # Camera device (set CAMERA_INDEX env var to override)
-    # Alternative: Use privileged mode if device mounting doesn't work
-    # privileged: true
-    # Mount workspace for development (optional - allows live code changes)
-    # Uncomment these volumes to enable live code reloading during development
-    # volumes:
-    #   - ../../libs:/app/libs:ro
-    #   - ./first.py:/app/machines/first/edge/first.py:ro
     # Environment variables for device configuration
     env_file:
       - .env  # Path relative to compose.yml location (machines/first/edge/.env)

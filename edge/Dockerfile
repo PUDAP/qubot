@@ -19,20 +19,15 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 COPY pyproject.toml uv.lock ./
 
-# Copy the entire workspace structure to maintain relative paths
-COPY machines/first/edge/ ./machines/first/edge/
-COPY libs/drivers/ ./libs/drivers/
-COPY libs/comms/ ./libs/comms/
+# Copy the workspace packages
+COPY edge/ ./edge/
+COPY driver/ ./driver/
 
 # Install dependencies using uv only for this package
-WORKDIR /app/machines/first/edge
+WORKDIR /app/edge
 RUN uv sync --frozen --no-dev --no-install-project --package first-edge
 
-# Set working directory back to service location
-WORKDIR /app/machines/first/edge
-
-# Set Python path to include the workspace
-ENV PYTHONPATH=/app/machines/first/edge:/app/libs/drivers/src:/app/libs/comms/src
+ENV PYTHONPATH=/app/edge:/app/driver/src
 
 CMD ["uv", "run", "python", "main.py"]
 
