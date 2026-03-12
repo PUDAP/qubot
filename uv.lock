@@ -44,7 +44,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
-    { name = "qubot-drivers", editable = "drivers" },
+    { name = "qubot-drivers", editable = "driver" },
 ]
 
 [[package]]
@@ -257,7 +257,7 @@ wheels = [
 [[package]]
 name = "qubot-drivers"
 version = "0.0.39"
-source = { editable = "drivers" }
+source = { editable = "driver" }
 dependencies = [
     { name = "nats-py" },
     { name = "numpy" },

@@ -32,30 +32,6 @@
    docker compose pull && docker compose up -d
    ```
 
-## Dependencies
-
-For the most updated code (development), use editable path dependencies in `pyproject.toml`:
-
-```toml
-dependencies = [
-    "qubot-drivers",
-    "puda-comms",
-]
-
-[tool.uv.sources]
-qubot-drivers = { path = "../../libs/drivers", editable = true }
-puda-comms = { path = "../../libs/comms", editable = true }
-```
-
-If not using editable dependencies, use versioned dependencies instead:
-
-```toml
-dependencies = [
-    "qubot-drivers>=0.0.12",
-    "puda-comms>=0.1.0",
-]
-```
-
 ## Docker Deployment
 
 ### Prerequisites
