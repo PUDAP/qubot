@@ -10,12 +10,11 @@ This class demonstrates the integration of:
 import logging
 import time
 from pathlib import Path
-from typing import Optional, Dict, Tuple, Type, Union
+from typing import Optional, Dict, Tuple, Union
 import numpy as np
 from qubot_drivers.move import RepRapController, Deck
 from qubot_drivers.core import Position
 from qubot_drivers.transfer.liquid.sartorius import SartoriusController
-from qubot_drivers.labware import StandardLabware
 from qubot_drivers.cv import CameraController
 
 logger = logging.getLogger(__name__)
@@ -223,22 +222,19 @@ class First:
         self.deck.empty_slot(slot=deck_slot)
         logger.debug("Deck slot '%s' emptied", deck_slot)
         
-    def load_deck(self, layout: Dict[str, Type[StandardLabware]]):
+    def load_deck(self, layout: Dict[str, str]):
         """
         Load multiple labware into the deck at once.
         
         Args:
-            layout: Dictionary mapping deck slot names (e.g., "A1", "B1", "C1") to
-                    labware names/files (e.g., opentrons_96_tiprack, trash_bin).
-            
+            deck_layout: Dictionary mapping deck slot names (e.g., "A1") to labware strings.
+        
         Example:
-            machine.load_deck(
-                layout={
-                    "A1": "opentrons_96_tiprack",
-                    "B1": "trash_bin",
-                    "C1": "polyelectric_8_wellplate_30000ul",
-                }
-            )
+            machine.load_deck({
+                "A1": "opentrons_96_tiprack_300ul",
+                "B1": "polyelectric_8_wellplate_30000ul",
+                "C1": "trash_bin",
+            })
         """
         logger.info("Loading deck layout with %d labware items", len(layout))
         for deck_slot, labware_name in layout.items():
