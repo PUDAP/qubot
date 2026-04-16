@@ -1,4 +1,4 @@
-# qubot
+# first
 
 Monorepo for the First edge service and shared drivers.
 
