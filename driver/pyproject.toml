@@ -33,7 +33,3 @@ dev = [
 [build-system]
 requires = ["hatchling >= 1.26"]
 build-backend = "hatchling.build"
-
-[project.urls]
-Homepage = "https://github.com/PUDAP/puda"
-Issues = "https://github.com/PUDAP/puda/issues"

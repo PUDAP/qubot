@@ -40,7 +40,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "puda-comms", specifier = "==0.0.9" },
+    { name = "puda-comms", specifier = "==0.0.14" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
@@ -132,15 +132,15 @@ wheels = [
 
 [[package]]
 name = "puda-comms"
-version = "0.0.9"
+version = "0.0.14"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "nats-py" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/23/8a/96188193856599779bcc8f4ca85daec64ea94a52c015d33075dcb94d8431/puda_comms-0.0.9.tar.gz", hash = "sha256:a249e8ab8233cccc3e6313e09032eeed5d84d1403fc5d3d2b3c75619d97b9ab1", size = 26520, upload-time = "2026-03-11T05:24:01.583Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4a/79/3c5d804c4487b69b6d19111eb58f91248e5fc617250f2103b03c9855ab2e/puda_comms-0.0.14.tar.gz", hash = "sha256:8ba54f6091f8120a80d2e39d78b56c1d27da404f16a1254e2fb115a41b9639b9", size = 31357, upload-time = "2026-04-21T07:31:18.871Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/74/d3/c634e2fa1884812e83eef1b8e79d1d4a19f196e3fe0214351d36d5f7e6c5/puda_comms-0.0.9-py3-none-any.whl", hash = "sha256:d6ebd1bcb5f6df516a463eb82147bd6b6c6ea45d9b44431ebc92f124de609d31", size = 30760, upload-time = "2026-03-11T05:23:59.402Z" },
+    { url = "https://files.pythonhosted.org/packages/4c/4c/c4e8cfd529d19f2661c4e425d6bc93b39e00b683dbe77682e0ccc804e25f/puda_comms-0.0.14-py3-none-any.whl", hash = "sha256:6eadbfc28ead6c00f1c608fbaf56bdee850bcf2806dca8d2f73b57b0ceadee03", size = 36367, upload-time = "2026-04-21T07:31:16.921Z" },
 ]
 
 [[package]]
