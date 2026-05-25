@@ -8,6 +8,7 @@ import asyncio
 import logging
 import sys
 import time
+import psutil
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from qubot_drivers.machines import First
 from puda import EdgeNatsClient, EdgeRunner
@@ -73,7 +74,13 @@ async def main():
     async def telemetry_handler():
         await edge_nats_client.publish_heartbeat()
         await edge_nats_client.publish_position(await driver.get_position())
-        await edge_nats_client.publish_health({"cpu": 45.2, "mem": 60.1, "temp": 35.0})
+        all_temps = psutil.sensors_temperatures()
+        sensor = next((v[0] for k in ("coretemp", "cpu_thermal", "k10temp", "acpitz") if (v := all_temps.get(k))), None)
+        await edge_nats_client.publish_health({
+            "cpu": psutil.cpu_percent(interval=None),
+            "mem": psutil.virtual_memory().percent,
+            "temp": sensor.current if sensor else None,
+        })
 
     runner = EdgeRunner(
         nats_client=edge_nats_client,
