@@ -1,0 +1,4 @@
+# Keep local config out of the image; Compose injects it at container start.
+.env
+**/.env
+!.env.example

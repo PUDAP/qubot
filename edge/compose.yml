@@ -11,9 +11,10 @@ services:
     devices:
       - ${QUBOT_PORT:-/dev/ttyACM0}:${QUBOT_PORT:-/dev/ttyACM0}  # Qubot port (set QUBOT_PORT env var to override)
       - ${SARTORIUS_PORT:-/dev/ttyUSB0}:${SARTORIUS_PORT:-/dev/ttyUSB0}  # Sartorius port (set SARTORIUS_PORT env var to override)
-    # Environment variables for device configuration
-    env_file:
-      - .env  # Path relative to compose.yml location (machines/first/edge/.env)
+    # Mount host .env so config updates apply after recreate (see main.py Config).
+    # Compose still reads this file for ${QUBOT_PORT} / ${SARTORIUS_PORT} substitution above.
+    volumes:
+      - ./.env:/app/edge/.env:ro
     healthcheck:
       test: ["CMD", "uv", "run", "python", "-c", "import sys; sys.exit(0)"]
       interval: 30s

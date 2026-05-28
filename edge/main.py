@@ -8,6 +8,7 @@ import asyncio
 import logging
 import sys
 import time
+from pathlib import Path
 import psutil
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from qubot_drivers.machines import First
@@ -31,7 +32,7 @@ class Config(BaseSettings):
     sartorius_port: str
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=Path(__file__).resolve().parent / ".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
     )
