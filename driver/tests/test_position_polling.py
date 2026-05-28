@@ -57,12 +57,10 @@ def run_operations(machine: First):
     Args:
         machine: First machine instance
     """
-    machine.start_video_recording()
     machine.attach_tip(slot="A3", well="G8")
     machine.aspirate_from(slot="C2", well="A1", amount=100, height_from_bottom=10)
     machine.dispense_to(slot="C2", well="B4", amount=100, height_from_bottom=50)
     machine.drop_tip(slot="C1", well="A1", height_from_bottom=10)
-    machine.stop_video_recording()
 
 
 async def main():
@@ -71,7 +69,6 @@ async def main():
     machine = First(
         qubot_port="/dev/ttyACM0",
         sartorius_port="/dev/ttyUSB0",
-        camera_index=0,
     )
     
     # View available labware

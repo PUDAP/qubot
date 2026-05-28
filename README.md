@@ -6,7 +6,7 @@ Monorepo for the First edge service and shared drivers.
 
 - Runs the First machine edge service.
 - Connects to NATS and translates commands into machine actions.
-- Uses local hardware devices (serial ports and camera).
+- Uses local hardware devices (serial ports).
 
 ## Prerequisites
 
@@ -15,7 +15,6 @@ Monorepo for the First edge service and shared drivers.
 - Devices available:
   - `/dev/ttyACM0` (qubot)
   - `/dev/ttyUSB0` (sartorius)
-  - `/dev/video0` (camera)
 
 ## Environment Setup
 
@@ -31,7 +30,6 @@ Edit `edge/.env` and configure:
 - `NATS_SERVERS`
 - `QUBOT_PORT`
 - `SARTORIUS_PORT`
-- `CAMERA_INDEX`
 
 ## Run With Docker (Recommended)
 

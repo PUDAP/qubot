@@ -17,7 +17,6 @@ if __name__ == "__main__":
     machine = First(
         qubot_port="/dev/ttyACM0",
         sartorius_port="/dev/ttyUSB0",
-        camera_index=0,
     )
     machine.startup()  # Connects all controllers, homes gantry, and initializes pipette
     

@@ -9,20 +9,17 @@ This class demonstrates the integration of:
 
 import logging
 import time
-from pathlib import Path
 from typing import Optional, Dict, Tuple, Union
-import numpy as np
 from qubot_drivers.move import RepRapController, Deck
 from qubot_drivers.core import Position
 from qubot_drivers.transfer.liquid.sartorius import SartoriusController
-from qubot_drivers.cv import CameraController
 
 logger = logging.getLogger(__name__)
 
 
 class First:
     """
-    First machine class integrating motion control, deck management, liquid handling, and camera.
+    First machine class integrating motion control, deck management, and liquid handling.
     
     The deck has 16 slots arranged in a 4x4 grid (A1-D4).
     Each slot's origin location is stored for absolute movement calculation.
@@ -65,29 +62,25 @@ class First:
         self,
         qubot_port: Optional[str] = None,
         sartorius_port: Optional[str] = None,
-        camera_index: Optional[Union[int, str]] = None,
         axis_limits: Optional[Dict[str, Tuple[float, float]]] = None,
     ):
         """
         Initialize the First machine.
 
-        qubot_port, sartorius_port, and camera_index must all be specified; otherwise ValueError is raised.
+        qubot_port and sartorius_port must both be specified; otherwise ValueError is raised.
 
         Args:
             qubot_port: Serial port for RepRapController (e.g., '/dev/ttyACM0').
             sartorius_port: Serial port for SartoriusController (e.g., '/dev/ttyUSB0').
-            camera_index: Camera device index or device path/identifier.
             axis_limits: Dictionary mapping axis names to (min, max) limits. Defaults to DEFAULT_AXIS_LIMITS.
 
         Raises:
-            ValueError: If qubot_port, sartorius_port, or camera_index is not specified.
+            ValueError: If qubot_port or sartorius_port is not specified.
         """
         if qubot_port is None:
             raise ValueError("qubot_port is required")
         if sartorius_port is None:
             raise ValueError("sartorius_port is required")
-        if camera_index is None:
-            raise ValueError("camera_index is required")
 
         # Initialize deck
         self.deck = Deck(rows=4, cols=4)
@@ -98,13 +91,11 @@ class First:
             self.qubot.set_axis_limits(axis, min_val, max_val)
 
         self.pipette = SartoriusController(port_name=sartorius_port)
-        self.camera = CameraController(camera_index=camera_index)
 
         logger.info(
-            "First machine initialized: qubot_port=%s, sartorius_port=%s, camera_index=%s",
+            "First machine initialized: qubot_port=%s, sartorius_port=%s",
             qubot_port,
             sartorius_port,
-            camera_index,
         )
         
     def startup(self):
@@ -112,7 +103,7 @@ class First:
         Start up the machine by connecting all controllers and initializing subsystems.
         
         This method:
-        - Connects to all controllers (gantry, pipette, camera)
+        - Connects to all controllers (gantry, pipette)
         - Homes the gantry to establish a known position
         - Initializes the pipette to reset it to a known state
         
@@ -121,7 +112,6 @@ class First:
         logger.info("Starting up machine and connecting all controllers")
         self.qubot.connect()
         self.pipette.connect()
-        self.camera.connect()
         logger.info("All controllers connected successfully")
 
         logger.info("Homing gantry...")
@@ -153,7 +143,6 @@ class First:
         logger.info("Shutting down machine and disconnecting all controllers")
         self.qubot.disconnect()
         self.pipette.disconnect()
-        self.camera.disconnect()
         logger.info("Machine shutdown complete")
     
     def wait(self, seconds: float):
@@ -523,91 +512,6 @@ class First:
         
         return pos
 
-   ### Camera operations ###
-    
-    def start_video_recording(
-        self,
-        filename: Optional[Union[str, Path]] = None,
-        fps: Optional[float] = None
-    ) -> Path:
-        """
-        Start recording a video.
-        
-        Args:
-            filename: Optional filename for the video. If not provided, a timestamped
-                    filename will be generated. If provided without extension, .mp4 will be added.
-            fps: Optional frames per second for the video. Defaults to 30.0 if not specified.
-        
-        Returns:
-            Path to the video file where recording is being saved
-            
-        Raises:
-            IOError: If camera is not connected or recording fails to start
-            ValueError: If already recording
-        """
-        return self.camera.start_video_recording(filename=filename, fps=fps)
-    
-    def stop_video_recording(self) -> Optional[Path]:
-        """
-        Stop recording a video.
-        
-        Returns:
-            Path to the saved video file, or None if no recording was in progress
-            
-        Raises:
-            IOError: If video writer fails to release
-        """
-        return self.camera.stop_video_recording()
-    
-    def record_video(
-        self,
-        duration_seconds: float,
-        filename: Optional[Union[str, Path]] = None,
-        fps: Optional[float] = None
-    ) -> Path:
-        """
-        Record a video for a specified duration.
-        
-        Args:
-            duration_seconds: Duration of the video in seconds
-            filename: Optional filename for the video. If not provided, a timestamped
-                    filename will be generated. If provided without extension, .mp4 will be added.
-            fps: Optional frames per second for the video. Defaults to 30.0 if not specified.
-        
-        Returns:
-            Path to the saved video file
-            
-        Raises:
-            IOError: If camera is not connected or recording fails
-        """
-        return self.camera.record_video(
-            duration_seconds=duration_seconds,
-            filename=filename,
-            fps=fps
-        )
-    
-    def capture_image(
-        self,
-        save: bool = False,
-        filename: Optional[Union[str, Path]] = None
-    ) -> np.ndarray:
-        """
-        Capture a single image from the camera.
-        
-        Args:
-            save: If True, save the image to the captures folder
-            filename: Optional filename for the saved image. If not provided and save=True,
-                     a timestamped filename will be generated. If provided without extension,
-                     .jpg will be added.
-        
-        Returns:
-            Captured image as a numpy array (BGR format)
-            
-        Raises:
-            IOError: If camera is not connected or capture fails
-        """
-        return self.camera.capture_image(save=save, filename=filename)
-    
     ### Control (immediate commands) ###
     def pause(self):
         """

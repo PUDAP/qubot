@@ -29,7 +29,6 @@ class Config(BaseSettings):
     nats_servers: str
     qubot_port: str
     sartorius_port: str
-    camera_index: int
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -60,7 +59,6 @@ async def main():
     driver = First(
         qubot_port=config.qubot_port,
         sartorius_port=config.sartorius_port,
-        camera_index=config.camera_index,
     )
     driver.startup()
     logger.info("First machine initialized successfully")
