@@ -588,3 +588,9 @@ class First:
         Cancel the execution of queued commands.
         """
         logger.info("Cancelling machine")
+        
+    def reset(self):
+        """
+        Reset the machine to its initial state.
+        """
+        logger.info("Resetting machine")
