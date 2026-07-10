@@ -5,7 +5,7 @@ Qubot Hardware drivers for the PUDA (Physical Unified Device Architecture) platf
 ## Features
 
 - **Gantry Control**: Control G-code compatible motion systems (e.g., QuBot)
-- **Liquid Handling**: Interface with Sartorius rLINE® pipettes and dispensers
+- **Liquid Handling**: Interface with Satorius rLINE® pipettes and dispensers
 - **Serial Communication**: Robust serial port management with automatic reconnection
 - **Logging**: Configurable logging with optional file output to logs folder
 - **Cross-platform**: Works on Linux, macOS, and Windows
@@ -28,7 +28,7 @@ pip install qubot-drivers
 The following device types are supported:
 
 - **GCode** - G-code compatible motion systems (e.g., QuBot)
-- **Sartorius rLINE®** - Electronic pipettes and robotic dispensers
+- **Satorius rLINE®** - Electronic pipettes and robotic dispensers
 - **Camera** - Webcams and USB cameras for image and video capture
 
 ## Finding Serial Ports
@@ -36,7 +36,7 @@ The following device types are supported:
 To discover available serial ports on your system:
 
 ```python
-from qubot_drivers.core import list_serial_ports
+from qubot_drivers import list_serial_ports
 
 # List all available ports
 ports = list_serial_ports()
@@ -44,7 +44,7 @@ for port, desc, hwid in ports:
     print(f"{port}: {desc} [{hwid}]")
 
 # Filter ports by description
-sartorius_ports = list_serial_ports(filter_desc="Sartorius")
+satorius_ports = list_serial_ports(filter_desc="Sartorius")
 ```
 
 ## Requirements

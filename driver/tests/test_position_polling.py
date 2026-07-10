@@ -6,7 +6,7 @@ import logging
 from datetime import datetime, timezone
 from qubot_drivers.machines import First
 from qubot_drivers.labware import get_available_labware
-from qubot_drivers.core import setup_logging
+from qubot_drivers import setup_logging
 
 setup_logging(
     enable_file_logging=False,
@@ -68,7 +68,7 @@ async def main():
     # Connect machine
     machine = First(
         qubot_port="/dev/ttyACM0",
-        sartorius_port="/dev/ttyUSB0",
+        satorius_port="/dev/ttyUSB0",
     )
     
     # View available labware

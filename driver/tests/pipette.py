@@ -1,25 +1,25 @@
 import logging
 import asyncio
-from qubot_drivers.transfer.liquid.sartorius import SartoriusController
-from qubot_drivers.core.logging import setup_logging
+from qubot_drivers.satorius import SatoriusController
+from qubot_drivers import setup_logging
 
 # Optional: finding ports
-from qubot_drivers.core.serialcontroller import list_serial_ports
+from qubot_drivers import list_serial_ports
 # print(list_serial_ports())
 
 # --- LOGGING CONFIGURATION ---
-# All loggers in imported modules (SerialController, SartoriusController) will inherit this setup.
+# All loggers in imported modules (SerialController, SatoriusController) will inherit this setup.
 setup_logging(
     enable_file_logging=False,
     log_level=logging.DEBUG,  # Use logging.DEBUG to see all (DEBUG, INFO, WARNING, ERROR, CRITICAL) logs
 )
 
 # OPTIONAL: If you only want specific loggers at specific level, you can specifically set it here
-# logging.getLogger('qubot_drivers.transfer.liquid.sartorius').setLevel(logging.INFO)
+# logging.getLogger('qubot_drivers.satorius').setLevel(logging.INFO)
 
 
 # --- CONFIGURATION ---
-SARTORIUS_PORT = "/dev/ttyUSB1"
+SATORIUS_PORT = "/dev/ttyUSB1"
 
 TRANSFER_VOLUME = 20  # uL
 TIP_LENGTH = 70  # mm
@@ -29,15 +29,15 @@ TIP_LENGTH = 70  # mm
 def test_pipette_operations():
     """
     Tests the initialization and core liquid handling functions
-    of the SartoriusController.
+    of the SatoriusController.
     """
     print("--- 🔬 Starting Pipette Controller Test ---")
-    pipette = SartoriusController(port_name=SARTORIUS_PORT)
+    pipette = SatoriusController(port_name=SATORIUS_PORT)
 
     try:
         # 1. Initialize and Connect
         print("[STEP 1] Connecting to pipette...")
-        # SartoriusController connects automatically in __init__, no need to call connect()
+        # SatoriusController connects automatically in __init__, no need to call connect()
 
         # Always start with initializing
         pipette.connect()

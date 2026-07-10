@@ -14,7 +14,7 @@ Monorepo for the First edge service and shared drivers.
 - Python 3.14+ and `uv` (for baremetal mode)
 - Devices available:
   - `/dev/ttyACM0` (qubot)
-  - `/dev/ttyUSB0` (sartorius)
+  - `/dev/ttyUSB0` (satorius)
 
 ## Environment Setup
 
@@ -29,7 +29,7 @@ Edit `edge/.env` and configure:
 - `MACHINE_ID`
 - `NATS_SERVERS`
 - `QUBOT_PORT`
-- `SARTORIUS_PORT`
+- `SATORIUS_PORT`
 
 ## Run With Docker (Recommended)
 

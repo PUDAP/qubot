@@ -1,18 +1,18 @@
 """
-PipQuBotV3 machine class containing Deck, GrblHALController, and SartoriusController.
+PipQuBotV3 machine class containing Deck, GrblHALController, and SatoriusController.
 
 This class integrates:
 - GrblHALController: Handles motion control (hardware-specific)
 - Deck: Manages labware layout (configuration-agnostic)
-- SartoriusController: Handles liquid handling operations
+- SatoriusController: Handles liquid handling operations
 """
 
 import logging
 import time
 from typing import Optional, Dict, Tuple, Union
 from qubot_drivers.move import GrblHALController, Deck
-from qubot_drivers.core import Position
-from qubot_drivers.transfer.liquid.sartorius import SartoriusController
+from qubot_drivers import Position
+from qubot_drivers.satorius import SatoriusController
 
 logger = logging.getLogger(__name__)
 
@@ -55,26 +55,26 @@ class PipQuBotV3:
     def __init__(
         self,
         qubot_port: Optional[str] = None,
-        sartorius_port: Optional[str] = None,
+        satorius_port: Optional[str] = None,
         axis_limits: Optional[Dict[str, Tuple[float, float]]] = None,
     ):
         """
         Initialize the First machine.
 
-        qubot_port and sartorius_port must both be specified; otherwise ValueError is raised.
+        qubot_port and satorius_port must both be specified; otherwise ValueError is raised.
 
         Args:
             qubot_port: Serial port for GrblHALController (e.g., '/dev/ttyACM0').
-            sartorius_port: Serial port for SartoriusController (e.g., '/dev/ttyUSB0').
+            satorius_port: Serial port for SatoriusController (e.g., '/dev/ttyUSB0').
             axis_limits: Dictionary mapping axis names to (min, max) limits. Defaults to DEFAULT_AXIS_LIMITS.
 
         Raises:
-            ValueError: If qubot_port or sartorius_port is not specified.
+            ValueError: If qubot_port or satorius_port is not specified.
         """
         if qubot_port is None:
             raise ValueError("qubot_port is required")
-        if sartorius_port is None:
-            raise ValueError("sartorius_port is required")
+        if satorius_port is None:
+            raise ValueError("satorius_port is required")
 
         # Initialize deck
         self.deck = Deck(rows=4, cols=4)
@@ -84,12 +84,12 @@ class PipQuBotV3:
         for axis, (min_val, max_val) in limits.items():
             self.qubot.set_axis_limits(axis, min_val, max_val)
 
-        self.pipette = SartoriusController(port_name=sartorius_port)
+        self.pipette = SatoriusController(port_name=satorius_port)
 
         logger.info(
-            "First machine initialized: qubot_port=%s, sartorius_port=%s",
+            "First machine initialized: qubot_port=%s, satorius_port=%s",
             qubot_port,
-            sartorius_port,
+            satorius_port,
         )
         
     def startup(self):
@@ -159,10 +159,10 @@ class PipQuBotV3:
             Dictionary containing the current position of the machine and its components (qubot, pipette).
         """
         qubot_position = await self.qubot.get_position()
-        sartorius_position = await self.pipette.get_position()
+        satorius_position = await self.pipette.get_position()
         return {
             "qubot": qubot_position.to_dict(),
-            "pipette": sartorius_position,
+            "pipette": satorius_position,
         }
     
     def get_deck(self):

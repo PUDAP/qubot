@@ -163,7 +163,7 @@ class SerialController(ABC):
                 if b"ok" in response or b"err" in response:
                     break
                 
-                # for sartorius since res not returning ok or err
+                # for satorius since res not returning ok or err
                 if b"\xba\r" in response:
                     break
             else:
@@ -181,7 +181,7 @@ class SerialController(ABC):
             self._logger.debug("<- Received response: %r", decoded_response)
         elif "err" in decoded_response.lower():
             self._logger.error("<- Received error: %r", decoded_response)
-        elif "º" in decoded_response: # for sartorius (since res not returning ok or err)
+        elif "º" in decoded_response: # for satorius (since res not returning ok or err)
             self._logger.debug("<- Received response: %r", decoded_response)
         else:
             self._logger.warning(

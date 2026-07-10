@@ -1,7 +1,6 @@
 import logging
 from qubot_drivers.move import RepRapController
-from qubot_drivers.core import Position
-from qubot_drivers.core.logging import setup_logging
+from qubot_drivers import Position, setup_logging
 
 # Optinal: finding ports
 # import serial.tools.list_ports

@@ -29,7 +29,7 @@ class Config(BaseSettings):
     machine_id: str
     nats_servers: str
     qubot_port: str
-    sartorius_port: str
+    satorius_port: str
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parent / ".env",
@@ -59,7 +59,7 @@ async def main():
     logger.info("Initializing machine driver")
     driver = First(
         qubot_port=config.qubot_port,
-        sartorius_port=config.sartorius_port,
+        satorius_port=config.satorius_port,
     )
     driver.startup()
     logger.info("First machine initialized successfully")

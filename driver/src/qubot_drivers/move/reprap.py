@@ -13,8 +13,8 @@ import asyncio
 from dataclasses import dataclass
 from typing import Optional, Dict, Tuple, Union
 
-from qubot_drivers.core.serialcontroller import SerialController
-from qubot_drivers.core.position import Position
+from qubot_drivers.serialcontroller import SerialController
+from qubot_drivers.position import Position
 
 
 @dataclass

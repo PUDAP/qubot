@@ -7,12 +7,12 @@ services:
     container_name: first-edge
     restart: unless-stopped
     # Mount USB devices for serial communication
-    # Note: Device paths should match QUBOT_PORT and SARTORIUS_PORT env vars
+    # Note: Device paths should match QUBOT_PORT and SATORIUS_PORT env vars
     devices:
       - ${QUBOT_PORT:-/dev/ttyACM0}:${QUBOT_PORT:-/dev/ttyACM0}  # Qubot port (set QUBOT_PORT env var to override)
-      - ${SARTORIUS_PORT:-/dev/ttyUSB0}:${SARTORIUS_PORT:-/dev/ttyUSB0}  # Sartorius port (set SARTORIUS_PORT env var to override)
+      - ${SATORIUS_PORT:-/dev/ttyUSB0}:${SATORIUS_PORT:-/dev/ttyUSB0}  # Satorius port (set SATORIUS_PORT env var to override)
     # Mount host .env so config updates apply after recreate (see main.py Config).
-    # Compose still reads this file for ${QUBOT_PORT} / ${SARTORIUS_PORT} substitution above.
+    # Compose still reads this file for ${QUBOT_PORT} / ${SATORIUS_PORT} substitution above.
     volumes:
       - ./.env:/app/edge/.env:ro
     healthcheck:

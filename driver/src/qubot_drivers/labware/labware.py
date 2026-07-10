@@ -6,7 +6,7 @@ import inspect
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from abc import ABC
-from qubot_drivers.core import Position
+from qubot_drivers import Position
 
 
 class StandardLabware(ABC):
