@@ -2,7 +2,7 @@ services:
   first:
     build:
       context: ..
-      dockerfile: edge/Dockerfile
+      dockerfile: first-edge/Dockerfile
     image: ghcr.io/pudap/first-edge:latest
     container_name: first-edge
     restart: unless-stopped
@@ -14,7 +14,7 @@ services:
     # Mount host .env so config updates apply after recreate (see main.py Config).
     # Compose still reads this file for ${QUBOT_PORT} / ${SATORIUS_PORT} substitution above.
     volumes:
-      - ./.env:/app/edge/.env:ro
+      - ./.env:/app/first-edge/.env:ro
     healthcheck:
       test: ["CMD", "uv", "run", "python", "-c", "import sys; sys.exit(0)"]
       interval: 30s

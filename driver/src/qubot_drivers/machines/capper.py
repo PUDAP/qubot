@@ -7,7 +7,7 @@ This class integrates:
 
 import logging
 import time
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from qubot_drivers.move.reprap_http import RepRapHTTPController
 from qubot_drivers.position import Position
@@ -164,16 +164,23 @@ class Capper:
         self.wait(2)
         self.qubot.g0(Position(z=self.Z_SAFE))
 
-    ### Queue (public commands) ###
-
-    async def get_position(self) -> Dict[str, float]:
+    def get_position(self) -> Dict[str, float]:
         """
         Get the current gantry position.
 
         Returns:
             Dictionary of axis positions (e.g. x, y, z, a).
         """
-        return (await self.qubot.get_position()).to_dict()
+        return self.qubot.get_position().to_dict()
+
+    def get_status(self) -> Dict[str, Any]:
+        """
+        Get the current RepRap firmware status.
+
+        Returns:
+            Dictionary from the rr_status endpoint (motion state, coordinates, etc.).
+        """
+        return self.qubot.get_status()
 
     ### Control (immediate commands) ###
 

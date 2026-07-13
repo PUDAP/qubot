@@ -1,2 +1,2 @@
 [tool.uv.workspace]
-members = ["edge", "driver"]
+members = ["first-edge", "capper-edge", "driver"]

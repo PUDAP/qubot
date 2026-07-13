@@ -4,7 +4,6 @@ HTTP controller for RepRapFirmware motion systems.
 Communicates with devices exposing the rr_gcode and rr_status HTTP endpoints.
 """
 
-import asyncio
 import json
 import logging
 import time
@@ -193,8 +192,11 @@ class RepRapHTTPController:
 
         return Position.from_dict(position_data)
 
-    async def get_position(self) -> Position:
-        data = await asyncio.to_thread(self._get_status)
+    def get_position(self) -> Position:
+        data = self._get_status()
         position = self._position_from_status(data)
         self._logger.info("Query position complete. Retrieved positions: %s", position)
         return position
+
+    def get_status(self) -> dict:
+        return self._get_status()
