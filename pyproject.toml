@@ -1,2 +1,2 @@
 [tool.uv.workspace]
-members = ["first-edge", "capper-edge", "driver"]
+members = ["first-edge", "capper-edge", "pescador-pipqubot-edge", "driver"]
