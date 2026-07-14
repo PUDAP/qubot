@@ -4,7 +4,6 @@ Satorius rLINE pipette controller.
 Reference: https://api.sartorius.com/document-hub/dam/download/34901/Sartorius-rLine-technical-user-manual-v1.1.pdf
 """
 
-import asyncio
 import json
 import logging
 from typing import Dict, Optional
@@ -212,9 +211,9 @@ class SatoriusController(SerialController):
 
         return json.dumps(status_data)
 
-    async def get_position(self) -> int:
+    def get_position(self) -> int:
         self._logger.info("** Querying Position (DP) **")
-        response = await asyncio.to_thread(self.execute, command="DP")
+        response = self.execute(command="DP")
         self._logger.info("** Position: %s steps **\n", response)
         return response
 

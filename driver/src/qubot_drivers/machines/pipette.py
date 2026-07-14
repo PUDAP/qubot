@@ -134,7 +134,7 @@ class Pipette:
         self.qubot.g0(Position(x=x, y=y))
         self.qubot.g0(Position(z=z))
 
-    async def get_position(self) -> Dict[str, Union[Dict[str, float], int]]:
+    def get_position(self) -> Dict[str, Union[Dict[str, float], int]]:
         """
         Get the current position of the machine.
 
@@ -142,7 +142,7 @@ class Pipette:
             Dictionary containing the current position of the machine and its components (qubot, pipette).
         """
         qubot_position = self.qubot.get_position()
-        satorius_position = await self.pipette.get_position()
+        satorius_position = self.pipette.get_position()
         return {
             "qubot": qubot_position.to_dict(),
             "pipette": satorius_position,

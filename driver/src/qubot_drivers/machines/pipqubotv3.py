@@ -159,7 +159,7 @@ class PipQuBotV3:
             Dictionary containing the current position of the machine and its components (qubot, pipette).
         """
         qubot_position = await self.qubot.get_position()
-        satorius_position = await self.pipette.get_position()
+        satorius_position = self.pipette.get_position()
         return {
             "qubot": qubot_position.to_dict(),
             "pipette": satorius_position,
