@@ -1,5 +1,6 @@
 import socket
 import threading
+import time
 
 import pytest
 
@@ -136,3 +137,131 @@ def test_home_waits_for_acknowledgement_then_idle_status():
             controller.disconnect()
 
     assert server.received == ["$H", "?"]
+
+
+def test_connect_discards_status_from_previous_connection():
+    def respond(connection, command):
+        if command == "?":
+            connection.sendall(b"<Idle|MPos:4,5,6|FS:0,0>\r\n")
+
+    with FakeGrblServer(respond) as server:
+        controller = GrblTelnetController(server.host, port=server.port, timeout=1)
+        controller._response_queue.put("<Alarm|MPos:1,2,3>")
+        controller.connect()
+        try:
+            status = controller._query_status()
+        finally:
+            controller.disconnect()
+
+    assert status == "<Idle|MPos:4,5,6|FS:0,0>"
+
+
+def test_peer_eof_interrupts_execute_without_waiting_for_timeout():
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(("127.0.0.1", 0))
+    server_socket.listen(1)
+    host, port = server_socket.getsockname()
+
+    def serve():
+        connection, _ = server_socket.accept()
+        with connection:
+            connection.recv(16)
+
+    thread = threading.Thread(target=serve, daemon=True)
+    thread.start()
+    controller = GrblTelnetController(host, port=port, timeout=2)
+    controller.connect()
+    started = time.monotonic()
+    try:
+        with pytest.raises(ConnectionError, match="connection closed"):
+            controller.execute("$I")
+    finally:
+        controller.disconnect()
+        server_socket.close()
+        thread.join(timeout=1)
+
+    assert time.monotonic() - started < 1
+
+
+def test_disconnect_interrupts_inflight_execute():
+    command_received = threading.Event()
+
+    def respond(_connection, command):
+        if command == "$H":
+            command_received.set()
+
+    with FakeGrblServer(respond) as server:
+        controller = GrblTelnetController(server.host, port=server.port, timeout=2)
+        controller.connect()
+        result = []
+
+        def execute():
+            try:
+                controller.execute("$H")
+            except Exception as error:
+                result.append(error)
+
+        thread = threading.Thread(target=execute)
+        thread.start()
+        assert command_received.wait(timeout=1)
+        controller.disconnect()
+        thread.join(timeout=1)
+
+    assert not thread.is_alive()
+    assert len(result) == 1
+    assert isinstance(result[0], ConnectionError)
+
+
+@pytest.mark.parametrize(
+    ("address", "expected_host", "expected_port"),
+    [
+        ("::1", "::1", 23),
+        ("[2001:db8::1]", "2001:db8::1", 23),
+        ("[2001:db8::1]:2323", "2001:db8::1", 2323),
+    ],
+)
+def test_ipv6_hosts_are_parsed_without_confusing_address_for_port(
+    address, expected_host, expected_port
+):
+    controller = GrblTelnetController(address)
+
+    assert controller.host == expected_host
+    assert controller.port == expected_port
+
+
+def test_reconnect_after_peer_eof_uses_a_fresh_socket_and_queue():
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_socket.bind(("127.0.0.1", 0))
+    server_socket.listen(2)
+    host, port = server_socket.getsockname()
+    accepted = []
+
+    def serve():
+        first, _ = server_socket.accept()
+        accepted.append(1)
+        with first:
+            first.recv(16)
+
+        second, _ = server_socket.accept()
+        accepted.append(2)
+        with second:
+            data = second.recv(16)
+            if data == b"$I\n":
+                second.sendall(b"ok\r\n")
+
+    server_thread = threading.Thread(target=serve, daemon=True)
+    server_thread.start()
+    controller = GrblTelnetController(host, port=port, timeout=1)
+    try:
+        controller.connect()
+        with pytest.raises(ConnectionError, match="connection closed"):
+            controller.execute("$I")
+        controller.connect()
+        assert controller.execute("$I") == "ok"
+    finally:
+        controller.disconnect()
+        server_socket.close()
+        server_thread.join(timeout=1)
+
+    assert accepted == [1, 2]
