@@ -1,15 +1,15 @@
 """
-Pescador machine class containing GrblWSController.
+Pescador machine class containing GrblTelnetController.
 
 This class integrates:
-- GrblWSController: Handles motion control over WebSocket (hardware-specific)
+- GrblTelnetController: Handles motion control over grblHAL NETCON Telnet
 """
 
 import logging
 import time
 from typing import Any, Dict, Optional
 
-from qubot_drivers.move.grbl_ws import GrblWSController
+from qubot_drivers.move.grbl_telnet import GrblTelnetController
 from qubot_drivers.position import Position
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class Pescador:
         Initialize the Pescador machine.
 
         Args:
-            qubot_ip: IP address for GrblWSController (e.g., '192.168.2.113').
+            qubot_ip: IP address for GrblTelnetController (e.g., '192.168.2.113').
 
         Raises:
             ValueError: If qubot_ip is not specified.
@@ -38,7 +38,7 @@ class Pescador:
         if qubot_ip is None:
             raise ValueError("qubot_ip is required")
 
-        self.qubot = GrblWSController(host=qubot_ip)
+        self.qubot = GrblTelnetController(host=qubot_ip)
 
         logger.info("Pescador machine initialized: qubot_ip=%s", qubot_ip)
 
