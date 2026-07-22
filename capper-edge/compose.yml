@@ -5,6 +5,8 @@ services:
       dockerfile: capper-edge/Dockerfile
     image: ghcr.io/pudap/capper-edge:latest
     container_name: capper-edge
+    # Required so the requested localhost NATS URLs resolve to the host broker.
+    network_mode: host
     restart: unless-stopped
     # Mount host .env so config updates apply after recreate (see main.py Config).
     volumes:
