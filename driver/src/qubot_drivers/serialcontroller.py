@@ -44,11 +44,22 @@ class SerialController(ABC):
     DEFAULT_TIMEOUT = 30  # seconds
     POLL_INTERVAL = 0.1  # seconds
 
-    def __init__(self, port_name, baudrate=DEFAULT_BAUDRATE, timeout=DEFAULT_TIMEOUT):
+    def __init__(
+        self,
+        port_name,
+        baudrate=DEFAULT_BAUDRATE,
+        timeout=DEFAULT_TIMEOUT,
+        dtr: Optional[bool] = None,
+        rts: Optional[bool] = None,
+        boot_wait: float = 0.0,
+    ):
         self._serial = None
         self.port_name = port_name
         self.baudrate = baudrate
         self._timeout = timeout
+        self._dtr = dtr
+        self._rts = rts
+        self._boot_wait = boot_wait
         self._logger = logger
         
         # lock to prevent concurrent access to the serial port
@@ -72,11 +83,29 @@ class SerialController(ABC):
                 self.port_name,
                 self.baudrate,
             )
-            self._serial = serial.Serial(
-                port=self.port_name,
-                baudrate=self.baudrate,
-                timeout=self._timeout,
-            )
+            # Configure modem-control lines before opening. Some controllers
+            # wire CP210x DTR/RTS to ESP32 reset/boot pins and will remain
+            # silent when pyserial opens with its True/True defaults.
+            self._serial = serial.Serial()
+            self._serial.port = self.port_name
+            self._serial.baudrate = self.baudrate
+            self._serial.timeout = self._timeout
+            if self._dtr is not None:
+                self._serial.dtr = self._dtr
+            if self._rts is not None:
+                self._serial.rts = self._rts
+            self._serial.open()
+
+            if self._boot_wait:
+                time.sleep(self._boot_wait)
+                if self._serial.in_waiting:
+                    boot_data = self._serial.read(self._serial.in_waiting)
+                    self._logger.debug(
+                        "Drained %s startup bytes from %s: %r",
+                        len(boot_data),
+                        self.port_name,
+                        boot_data.decode("utf-8", errors="replace"),
+                    )
             self._serial.flush()
             self._logger.info("Successfully connected to %s.", self.port_name)
         except serial.SerialException as e:

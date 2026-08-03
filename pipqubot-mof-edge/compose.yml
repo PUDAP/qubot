@@ -1,0 +1,20 @@
+services:
+  pipqubot-mof:
+    build:
+      context: ..
+      dockerfile: pipqubot-mof-edge/Dockerfile
+    image: ghcr.io/pudap/pipqubot-mof-edge:latest
+    container_name: pipqubot-mof-edge
+    restart: unless-stopped
+    network_mode: host
+    devices:
+      - /dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0:${QUBOT_PORT}
+      - /dev/serial/by-id/usb-FTDI_USB-RS232_Cable_FT4WP0IE-if00-port0:${SATORIUS_PORT}
+    volumes:
+      - ./.env:/app/pipqubot-mof-edge/.env:ro
+    healthcheck:
+      test: ["CMD", "uv", "run", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

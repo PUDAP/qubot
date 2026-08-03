@@ -39,8 +39,8 @@
             "totalLiquidVolume": 30000,
             "shape": "circular",
             "diameter": 16.9,
-            "x": 25,
-            "y": 59,
+            "x": 23,
+            "y": 58,
             "z": 3.5
         },
         "B1": {
@@ -48,8 +48,8 @@
             "totalLiquidVolume": 30000,
             "shape": "circular",
             "diameter": 16.9,
-            "x": 25,
-            "y": 29,
+            "x": 23,
+            "y": 28,
             "z": 3.5
         },
         "A2": {
@@ -57,8 +57,8 @@
             "totalLiquidVolume": 30000,
             "shape": "circular",
             "diameter": 16.9,
-            "x": 54,
-            "y": 59,
+            "x": 52,
+            "y": 58,
             "z": 3.5
         },
         "B2": {
@@ -66,8 +66,8 @@
             "totalLiquidVolume": 30000,
             "shape": "circular",
             "diameter": 16.9,
-            "x": 54,
-            "y": 29,
+            "x": 52,
+            "y": 28,
             "z": 3.5
         },
         "A3": {
@@ -75,8 +75,8 @@
             "totalLiquidVolume": 30000,
             "shape": "circular",
             "diameter": 16.9,
-            "x": 83,
-            "y": 59,
+            "x": 81,
+            "y": 58,
             "z": 3.5
         },
         "B3": {
@@ -84,8 +84,8 @@
             "totalLiquidVolume": 30000,
             "shape": "circular",
             "diameter": 16.9,
-            "x": 83,
-            "y": 29,
+            "x": 81,
+            "y": 28,
             "z": 3.5
         },
         "A4": {
@@ -93,8 +93,8 @@
             "totalLiquidVolume": 30000,
             "shape": "circular",
             "diameter": 16.9,
-            "x": 112,
-            "y": 59,
+            "x": 110,
+            "y": 58,
             "z": 3.5
         },
         "B4": {
@@ -102,8 +102,8 @@
             "totalLiquidVolume": 30000,
             "shape": "circular",
             "diameter": 16.9,
-            "x": 112,
-            "y": 29,
+            "x": 110,
+            "y": 28,
             "z": 3.5
         }
     },

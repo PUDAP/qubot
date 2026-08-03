@@ -81,7 +81,14 @@ class GrblHALController(SerialController):
             timeout: Timeout in seconds for operations. Defaults to 20.
             feed: Initial feed rate in mm/min. Defaults to 3000.
         """
-        super().__init__(port_name, baudrate, timeout)
+        super().__init__(
+            port_name,
+            baudrate,
+            timeout,
+            dtr=False,
+            rts=False,
+            boot_wait=3.0,
+        )
 
         self._logger = logging.getLogger(__name__)
         self._logger.info(

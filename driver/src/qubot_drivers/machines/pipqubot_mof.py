@@ -1,5 +1,5 @@
 """
-PipQuBotV3 machine class containing Deck, GrblHALController, and SatoriusController.
+PipQuBotMOF machine class containing Deck, GrblHALController, and SatoriusController.
 
 This class integrates:
 - GrblHALController: Handles motion control (hardware-specific)
@@ -16,9 +16,9 @@ from qubot_drivers.satorius import SatoriusController
 
 logger = logging.getLogger(__name__)
 
-class PipQuBotV3:
+class PipQuBotMOF:
     """
-    PipQuBotV3 machine class integrating motion control, deck management, and liquid handling.
+    MOF PipQuBot machine class integrating motion control, deck management, and liquid handling.
     
     The deck has 8 slots arranged in a 2x4 grid (A1-D2).
     Each slot's origin location is stored for absolute movement calculation.
@@ -41,14 +41,14 @@ class PipQuBotV3:
     
     # Slot origins (the bottom left corner of each deck slot relative to the deck origin)
     SLOT_ORIGINS = {
-        "A1": Position(x=0.6, y=-456.2),
-        "A2": Position(x=100.6, y=-456.2),
-        "B1": Position(x=0.6, y=-306.2),
-        "B2": Position(x=100.6, y=-306.2),
-        "C1": Position(x=0.6, y=-156.2),
-        "C2": Position(x=100.6, y=-156.2),
-        "D1": Position(x=0.6, y=-6.2),
-        "D2": Position(x=100.6, y=-6.2),
+        "A1": Position(x=0.2, y=-456.2),
+        "A2": Position(x=100.2, y=-456.2),
+        "B1": Position(x=0.2, y=-306.2),
+        "B2": Position(x=100.2, y=-306.2),
+        "C1": Position(x=0.2, y=-156.2),
+        "C2": Position(x=100.2, y=-156.2),
+        "D1": Position(x=0.2, y=-6.2),
+        "D2": Position(x=100.2, y=-6.2),
     }
     
     def __init__(
@@ -86,7 +86,7 @@ class PipQuBotV3:
         self.pipette = SatoriusController(port_name=satorius_port)
 
         logger.info(
-            "First machine initialized: qubot_port=%s, satorius_port=%s",
+            "MOF PipQuBot initialized: qubot_port=%s, satorius_port=%s",
             qubot_port,
             satorius_port,
         )
@@ -222,6 +222,21 @@ class PipQuBotV3:
         for deck_slot, labware_name in layout.items():
             self.load_labware(deck_slot=deck_slot, labware_name=labware_name)
         logger.info("Deck layout loaded successfully")
+
+    def move_to_well(self, *, deck_slot: str, well_name: str) -> Dict[str, float]:
+        """Move to the top of a loaded labware well without liquid handling."""
+        logger.info("Moving to deck slot '%s', well '%s'", deck_slot, well_name)
+        pos = self._get_absolute_z_position(deck_slot, well_name)
+        self.qubot.move_absolute(position=pos)
+        logger.info("Move to well completed at %s", pos)
+        return pos.to_dict()
+
+    def move_z_relative(self, *, distance_mm: float) -> Dict[str, float]:
+        """Move only the Z axis by a signed relative distance in millimetres."""
+        logger.info("Moving Z axis relative by %s mm", distance_mm)
+        pos = self.qubot.move_relative(position=Position(z=distance_mm))
+        logger.info("Relative Z move completed at %s", pos)
+        return pos.to_dict()
         
     ### Pipette operations ###
     def attach_tip(self, deck_slot: str, well_name: str):
@@ -430,8 +445,14 @@ class PipQuBotV3:
                 logger.error("Cannot get well position: no labware loaded in deck slot '%s'", deck_slot)
                 raise ValueError(f"No labware loaded in deck slot '{deck_slot}'. Load labware before accessing wells.")
             well_pos = labware.get_well_position(well_name).get_xy()
-            # the deck is rotated 90 degrees clockwise for this machine
-            pos += well_pos.swap_xy()
+            # The MOF deck mounts labware with the row direction reversed
+            # after the XY axis swap. Mirror the labware Y coordinate across
+            # the occupied well grid so physical A..H matches logical A..H.
+            well_y_positions = [
+                labware.get_well_position(well).y for well in labware.wells
+            ]
+            mirrored_y = min(well_y_positions) + max(well_y_positions) - well_pos.y
+            pos += Position(x=mirrored_y, y=well_pos.x)
             # get z
             pos += Position(z=labware.get_height() - self.CEILING_HEIGHT)
             # if tip attached, add tip length
