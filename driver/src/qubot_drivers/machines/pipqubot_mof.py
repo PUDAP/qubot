@@ -1,29 +1,30 @@
 """
-First machine class containing Deck, RepRapController, and SatoriusController.
+PipQuBotV3 machine class containing Deck, GrblHALController, and SatoriusController.
 
-This class demonstrates the integration of:
-- RepRapController: Handles motion control (hardware-specific)
+This class integrates:
+- GrblHALController: Handles motion control (hardware-specific)
 - Deck: Manages labware layout (configuration-agnostic)
 - SatoriusController: Handles liquid handling operations
 """
 
 import logging
 import time
-from typing import Any, Optional, Dict, Tuple, Union
-from qubot_drivers.move import RepRapController, Deck
+from typing import Optional, Dict, Tuple, Union
+from qubot_drivers.move import GrblHALController, Deck
 from qubot_drivers import Position
 from qubot_drivers.satorius import SatoriusController
 
 logger = logging.getLogger(__name__)
 
-
-class First:
+class PipQuBotV3:
     """
-    First machine class integrating motion control, deck management, and liquid handling.
+    PipQuBotV3 machine class integrating motion control, deck management, and liquid handling.
     
-    The deck has 16 slots arranged in a 4x4 grid (A1-D4).
+    The deck has 8 slots arranged in a 2x4 grid (A1-D2).
     Each slot's origin location is stored for absolute movement calculation.
     """
+    
+    
     CEILING_HEIGHT = 225.0 # Height from z and a origin to the deck
 
     # Pipette
@@ -62,7 +63,7 @@ class First:
         qubot_port and satorius_port must both be specified; otherwise ValueError is raised.
 
         Args:
-            qubot_port: Serial port for RepRapController (e.g., '/dev/ttyACM0').
+            qubot_port: Serial port for GrblHALController (e.g., '/dev/ttyACM0').
             satorius_port: Serial port for SatoriusController (e.g., '/dev/ttyUSB0').
             axis_limits: Dictionary mapping axis names to (min, max) limits. Defaults to DEFAULT_AXIS_LIMITS.
 
@@ -77,7 +78,7 @@ class First:
         # Initialize deck
         self.deck = Deck(rows=4, cols=4)
 
-        self.qubot = RepRapController(port_name=qubot_port)
+        self.qubot = GrblHALController(port_name=qubot_port)
         limits = axis_limits or self.DEFAULT_AXIS_LIMITS
         for axis, (min_val, max_val) in limits.items():
             self.qubot.set_axis_limits(axis, min_val, max_val)
@@ -137,20 +138,16 @@ class First:
         self.pipette.disconnect()
         logger.info("Machine shutdown complete")
     
-    def wait(self, seconds: float) -> Dict[str, float]:
+    def wait(self, seconds: float):
         """
         Wait for a specified number of seconds.
         
         Args:
             seconds: Number of seconds to wait (can be a float for fractional seconds)
-
-        Returns:
-            Dictionary with the number of seconds waited.
         """
         logger.debug("Waiting for %.2f seconds", seconds)
         time.sleep(seconds)
         logger.debug("Waited for %.2f seconds", seconds)
-        return {"seconds": seconds}
         
     ### Queue (public commands) ###
     async def get_position(self) -> Dict[str, Union[Dict[str, float], int]]:
@@ -167,7 +164,7 @@ class First:
             "pipette": satorius_position,
         }
     
-    def get_deck(self) -> Dict[str, str]:
+    def get_deck(self):
         """
         Get the current deck layout.
         
@@ -179,7 +176,7 @@ class First:
         """
         return self.deck.to_dict()
         
-    def load_labware(self, deck_slot: str, labware_name: str) -> Dict[str, str]:
+    def load_labware(self, deck_slot: str, labware_name: str):
         """
         Load a labware object into a deck slot.
         
@@ -187,43 +184,32 @@ class First:
             deck_slot: Deck slot name (e.g., 'A1', 'B2')
             labware_name: Name of the labware class to load
         
-        Returns:
-            Dictionary with the normalized deck_slot and labware_name that was loaded.
-        
         Raises:
             KeyError: If deck_slot is not found in deck
         """
         logger.info("Loading labware '%s' into deck slot '%s'", labware_name, deck_slot)
         self.deck.load_labware(slot=deck_slot, labware_name=labware_name)
         logger.debug("Labware '%s' loaded into deck slot '%s'", labware_name, deck_slot)
-        return {"deck_slot": deck_slot.upper(), "labware_name": labware_name}
 
-    def remove_labware(self, deck_slot: str) -> Dict[str, str]:
+    def remove_labware(self, deck_slot: str):
         """
         Remove labware from a deck slot.
         
         Args:
             deck_slot: Deck slot name (e.g., 'A1', 'B2')
-
-        Returns:
-            Dictionary with the normalized deck_slot that was emptied.
         
         Raises:
             KeyError: If deck_slot is not found in deck
         """
         self.deck.empty_slot(slot=deck_slot)
         logger.debug("Deck slot '%s' emptied", deck_slot)
-        return {"deck_slot": deck_slot.upper()}
         
-    def load_deck(self, layout: Dict[str, str]) -> Dict[str, Dict[str, str | None]]:
+    def load_deck(self, layout: Dict[str, str]):
         """
         Load multiple labware into the deck at once.
         
         Args:
             deck_layout: Dictionary mapping deck slot names (e.g., "A1") to labware strings.
-
-        Returns:
-            Dictionary with the full deck layout after loading.
         
         Example:
             machine.load_deck({
@@ -236,27 +222,23 @@ class First:
         for deck_slot, labware_name in layout.items():
             self.load_labware(deck_slot=deck_slot, labware_name=labware_name)
         logger.info("Deck layout loaded successfully")
-        return {"layout": self.get_deck()}
         
     ### Pipette operations ###
-    def attach_tip(self, deck_slot: str, well_name: str) -> Dict[str, bool]:
+    def attach_tip(self, deck_slot: str, well_name: str):
         """
         Attach a tip from a deck slot and well.
 
         Args:
             deck_slot: Deck slot name (e.g., 'A1', 'B2')
             well_name: Well name (e.g., 'A1' for a well in a tiprack)
-
-        Returns:
-            Dictionary with skipped set to True if attachment was skipped, False otherwise.
-
+        
         Note:
             This method is idempotent - if a tip is already attached, it will
             log a warning and return successfully without raising an error.
         """
         if self.pipette.is_tip_attached():
             logger.warning("Tip already attached - skipping attachment (idempotent operation)")
-            return {"skipped": True}
+            return
         
         logger.info("Attaching tip from deck slot '%s'%s", deck_slot, f", well '{well_name}'" if well_name else "")
         pos = self._get_absolute_z_position(deck_slot, well_name)
@@ -279,9 +261,8 @@ class First:
         # must home Z axis after, as pressing in tip might cause it to lose steps
         self.qubot.home(axis="Z")
         logger.debug("Z axis homed after tip attachment")
-        return {"skipped": False}
         
-    def drop_tip(self, *, deck_slot: str, well_name: str, height_from_bottom: float = 0.0) -> Dict[str, Any]:
+    def drop_tip(self, *, deck_slot: str, well_name: str, height_from_bottom: float = 0.0):
         """
         Drop a tip into a deck slot.
         
@@ -290,9 +271,6 @@ class First:
             well_name: Well name within the deck slot (e.g., 'A1' for a well in a tiprack)
             height_from_bottom: Height from the bottom of the well in mm. Defaults to 0.0.
                                Must be non-negative. Positive values move up from the bottom.
-
-        Returns:
-            Dictionary with deck_slot, well_name, and height_from_bottom.
         
         Raises:
             ValueError: If no tip is attached, if height_from_bottom is negative, or if
@@ -318,13 +296,8 @@ class First:
         time.sleep(5)
         self.pipette.set_tip_attached(attached=False)
         logger.info("Tip dropped successfully")
-        return {
-            "deck_slot": deck_slot.upper(),
-            "well_name": well_name,
-            "height_from_bottom": height_from_bottom,
-        }
         
-    def aspirate_from(self, *, deck_slot: str, well_name: str, amount: int, height_from_bottom: float = 0.0) -> Dict[str, Any]:
+    def aspirate_from(self, *, deck_slot: str, well_name: str, amount: int, height_from_bottom: float = 0.0):
         """
         Aspirate a volume of liquid from a deck slot.
         
@@ -334,9 +307,6 @@ class First:
             amount: Volume to aspirate in µL
             height_from_bottom: Height from the bottom of the well in mm. Defaults to 0.0.
                                Must be non-negative. Positive values move up from the bottom.
-
-        Returns:
-            Dictionary with deck_slot, well_name, amount, and height_from_bottom.
         
         Raises:
             ValueError: If no tip is attached, if height_from_bottom is negative, or if
@@ -364,14 +334,8 @@ class First:
         self.pipette.aspirate(amount=amount)
         time.sleep(5)
         logger.info("Aspiration completed: %d µL from deck slot '%s', well '%s'", amount, deck_slot, well_name)
-        return {
-            "deck_slot": deck_slot.upper(),
-            "well_name": well_name,
-            "amount": amount,
-            "height_from_bottom": height_from_bottom,
-        }
         
-    def dispense_to(self, *, deck_slot: str, well_name: str, amount: int, height_from_bottom: float = 0.0) -> Dict[str, Any]:
+    def dispense_to(self, *, deck_slot: str, well_name: str, amount: int, height_from_bottom: float = 0.0):
         """
         Dispense a volume of liquid to a deck slot.
         
@@ -381,9 +345,6 @@ class First:
             amount: Volume to dispense in µL
             height_from_bottom: Height from the bottom of the well in mm. Defaults to 0.0.
                                Must be non-negative. Positive values move up from the bottom.
-
-        Returns:
-            Dictionary with deck_slot, well_name, amount, and height_from_bottom.
         
         Raises:
             ValueError: If no tip is attached, if height_from_bottom is negative, or if
@@ -411,59 +372,18 @@ class First:
         self.pipette.dispense(amount=amount)
         time.sleep(5)
         logger.info("Dispense completed: %d µL to deck slot '%s', well '%s'", amount, deck_slot, well_name)
-        return {
-            "deck_slot": deck_slot.upper(),
-            "well_name": well_name,
-            "amount": amount,
-            "height_from_bottom": height_from_bottom,
-        }
         
-    def blowout(self, *, return_position: Optional[int] = None) -> Dict[str, Any]:
+    def blowout(self, *, return_position: Optional[int] = None):
         """
         Blow out the pipette.
         
         Args:
             return_position: Optional position to return to after blowout. Defaults to None.
-
-        Returns:
-            Dictionary with the return_position used for the blowout, if any.
         """
         logger.info("Blowing out pipette")
         self.pipette.run_blowout(return_position=return_position)
         logger.info("Blowout completed")
-        return {"return_position": return_position}
 
-    # Electrode operations
-    def move_electrode(self, deck_slot: str, well_name: str, height_from_bottom: float = 0.0) -> Dict[str, Any]:
-        """
-        Move the electrode to a deck slot.
-        
-        Args:
-            deck_slot: Deck slot name (e.g., 'A1', 'B2')
-            well_name: Well name within the deck slot (e.g., 'A1')
-            height_from_bottom: Height from the bottom of the well in mm. Defaults to 0.0.
-                               Must be non-negative. Positive values move up from the bottom.
-
-        Returns:
-            Dictionary with deck_slot, well_name, and height_from_bottom.
-        
-        Raises:
-            ValueError: If height_from_bottom is negative.
-        """
-        if height_from_bottom < 0:
-            logger.error("height_from_bottom must be non-negative, got %f", height_from_bottom)
-            raise ValueError(f"height_from_bottom must be non-negative, got {height_from_bottom}")
-        
-        pos = self._get_absolute_a_position(deck_slot, well_name)
-        pos += Position(a=height_from_bottom)
-        self.qubot.move_absolute(position=pos)
-        logger.info("Electrode moved to deck slot '%s', well '%s' at height %s mm from bottom", deck_slot, well_name, height_from_bottom)
-        return {
-            "deck_slot": deck_slot.upper(),
-            "well_name": well_name,
-            "height_from_bottom": height_from_bottom,
-        }
-        
     # Helper methods
     def _get_slot_origin(self, deck_slot: str) -> Position:
         """
@@ -522,67 +442,22 @@ class First:
             logger.debug("Absolute Z position for deck slot '%s': %s", deck_slot, pos)
         return pos
     
-    def _get_absolute_a_position(self, deck_slot: str, well_name: Optional[str] = None) -> Position:
-        """
-        Get the absolute position for a deck slot (and optionally a well within that deck slot) based on the origin
-        
-        Args:
-            deck_slot: Deck slot name (e.g., 'A1', 'B2')
-            well_name: Optional well name within the deck slot (e.g., 'A1' for a well in a tiprack)
-            
-        Returns:
-            Position with absolute coordinates
-            
-        Raises:
-            ValueError: If well_name is specified but no labware is loaded in the deck slot
-        """
-        # get x and y
-        pos = self._get_slot_origin(deck_slot)
-        pos -= self.A_ORIGIN # subtract the origin to get the absolute position
-        
-        # Get labware for a-axis positioning
-        labware = self.deck[deck_slot]
-        if labware is None:
-            logger.error("Cannot get electrode position: no labware loaded in deck slot '%s'", deck_slot)
-            raise ValueError(f"No labware loaded in deck slot '{deck_slot}'. Load labware before moving electrode.")
-        
-        # get x and y for well if specified
-        if well_name:
-            well_pos = labware.get_well_position(well_name).get_xy()
-            pos += well_pos.swap_xy()
-        
-        # get a (applies to both with and without well_name)
-        pos += Position(a=labware.get_height() - self.CEILING_HEIGHT)
-        pos += Position(a=self.ELECTRODE_LENGTH)
-        
-        if well_name:
-            logger.debug("Absolute A position for deck slot '%s', well '%s': %s", deck_slot, well_name, pos)
-        else:
-            logger.debug("Absolute A position for deck slot '%s': %s", deck_slot, pos)
-        
-        return pos
-
     ### Control (immediate commands) ###
+    
     def pause(self):
         """
         Pause the execution of queued commands.
         """
-        logger.info("Pausing machine")
+        print("Pausing machine")
     
     def resume(self):
         """
         Resume the execution of queued commands.
         """
-        logger.info("Resuming machine")
+        print("Resuming machine")
 
     def cancel(self):
         """
         Cancel the execution of queued commands.
         """
-        logger.info("Cancelling machine")
-        
-    def reset(self):
-        """
-        Reset the machine to its initial state.
-        """
-        logger.info("Resetting machine")
+        print("Cancelling machine")
