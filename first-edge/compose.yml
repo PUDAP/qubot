@@ -21,24 +21,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-
-  mediamtx:
-    image: bluenviron/mediamtx:latest
-    container_name: mediamtx
-    ports:
-      - "8554:8554" # RTSP
-      - "1935:1935" # RTMP
-      - "8888:8888" # HLS
-      - "8889:8889" # WebRTC (HTTP/WHIP/WHEP)
-      - "8189:8189/udp" # WebRTC ICE/UDP
-      - "8189:8189/tcp" # WebRTC ICE/TCP
-    environment:
-      # Enable WebRTC
-      - MTX_WEBRTC=yes
-      - MTX_WEBRTCADDRESS=:8889
-      - MTX_WEBRTCLOCALUDPADDRESS=:8189
-      - MTX_WEBRTCADDITIONALHOSTS=100.86.162.126
-      # Native Tapo Camera Proxy Configuration
-      - MTX_PATHS_LIVESTREAM_SOURCE=rtsp://puda-tapo:berkeleybears@10.0.59.102:554/stream1
-      - MTX_PATHS_LIVESTREAM_SOURCEONDEMAND=yes
-    restart: unless-stopped
