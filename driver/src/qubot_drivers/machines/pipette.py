@@ -12,6 +12,7 @@ from typing import Any, Dict, Optional, Union
 from qubot_drivers.move.grbl_ws import GrblWSController
 from qubot_drivers.position import Position
 from qubot_drivers.satorius import SatoriusController
+from puda import command
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,7 @@ class Pipette:
         time.sleep(3)  # need to wait for the pipette to initialize
         logger.info("Machine startup complete - ready for operations")
 
+    @command
     def home(self):
         """Home the qubot gantry and reinitialize the pipette."""
         logger.info("Homing qubot gantry...")
@@ -80,6 +82,7 @@ class Pipette:
         self.pipette.initialize()
         logger.info("Qubot gantry homing complete")
 
+    @command
     def shutdown(self):
         """Gracefully shut down the machine by disconnecting all controllers."""
         logger.info("Shutting down machine and disconnecting all controllers")
@@ -87,6 +90,7 @@ class Pipette:
         self.pipette.disconnect()
         logger.info("Machine shutdown complete")
 
+    @command
     def wait(self, seconds: float) -> Dict[str, float]:
         """
         Wait for a specified number of seconds.
@@ -102,6 +106,7 @@ class Pipette:
         logger.debug("Waited for %.2f seconds", seconds)
         return {"seconds": seconds}
 
+    @command
     def move_to(self, x: float, y: float, z: float):
         """
         Move the gantry directly to an absolute position.
@@ -116,6 +121,7 @@ class Pipette:
         """
         self.qubot.g0(Position(x=x, y=y, z=z))
 
+    @command
     def safe_move_to(self, x: float, y: float, z: float, z_safe: float = -10):
         """
         Move to an absolute position while keeping the tip clear of obstacles.
@@ -134,6 +140,7 @@ class Pipette:
         self.qubot.g0(Position(x=x, y=y))
         self.qubot.g0(Position(z=z))
 
+    @command
     def get_position(self) -> Dict[str, Union[Dict[str, float], int]]:
         """
         Get the current position of the machine.
@@ -150,6 +157,7 @@ class Pipette:
 
     ### Pipette operations ###
 
+    @command
     def attach_tip(
         self,
         x: float,
@@ -192,6 +200,7 @@ class Pipette:
         self.qubot.home(axis="Z")
         return {"skipped": False}
 
+    @command
     def drop_tip(self) -> Dict[str, Any]:
         """
         Drop the attached tip.
@@ -210,6 +219,7 @@ class Pipette:
         logger.info("Tip dropped successfully")
         return {}
 
+    @command
     def aspirate_from(self, amount: int) -> Dict[str, int]:
         """
         Aspirate a volume of liquid at the current position.
@@ -230,6 +240,7 @@ class Pipette:
         logger.info("Aspiration completed: %d µL", amount)
         return {"amount": amount}
 
+    @command
     def dispense_to(self, amount: int) -> Dict[str, int]:
         """
         Dispense a volume of liquid at the current position.
@@ -250,6 +261,7 @@ class Pipette:
         logger.info("Dispense completed: %d µL", amount)
         return {"amount": amount}
 
+    @command
     def blowout(self) -> Dict[str, Any]:
         """Blow out the pipette."""
         logger.info("Blowing out pipette")
@@ -259,18 +271,22 @@ class Pipette:
 
     ### Control (immediate commands) ###
 
+    @command
     def pause(self):
         """Pause the execution of queued commands."""
         logger.info("Pausing machine")
 
+    @command
     def resume(self):
         """Resume the execution of queued commands."""
         logger.info("Resuming machine")
 
+    @command
     def cancel(self):
         """Cancel the execution of queued commands."""
         logger.info("Cancelling machine")
 
+    @command
     def reset(self):
         """Reset the machine to its initial state."""
         logger.info("Resetting machine")

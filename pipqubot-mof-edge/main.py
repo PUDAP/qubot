@@ -1,25 +1,32 @@
-"""PUDA edge entry point for the MOF PipQuBot."""
+"""
+Main entry point for the pipqubot-mof machine edge service.
+
+This module provides the main event loop for the MOF PipQuBot, handling command
+execution via NATS messaging, telemetry publishing, and connection management.
+"""
 
 import asyncio
 import logging
 import sys
 import time
-from pathlib import Path
-
 import psutil
-from puda import EdgeNatsClient, EdgeRunner
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from puda import EdgeNatsClient, EdgeRunner
 from qubot_drivers.machines.pipqubot_mof import PipQuBotMOF
 
+
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     force=True,
 )
-logging.getLogger("qubot_drivers").setLevel(logging.INFO)
+logging.getLogger("qubot_drivers").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
+# Environment configuration
 class Config(BaseSettings):
     machine_id: str
     nats_servers: str
@@ -34,57 +41,55 @@ class Config(BaseSettings):
 
     @property
     def nats_server_list(self) -> list[str]:
-        return [server.strip() for server in self.nats_servers.split(",") if server.strip()]
+        return [s.strip() for s in self.nats_servers.split(",") if s.strip()]
 
 
 def load_config() -> Config:
+    """Load and validate configuration; exit process on failure."""
     try:
         return Config()
-    except Exception as exc:
-        logger.error("Failed to load configuration: %s", exc)
+    except Exception as e:
+        logger.error("Failed to load configuration: %s", e, exc_info=True)
         sys.exit(1)
 
 
-async def main() -> None:
+async def main():
+    """Initialize the machine driver and NATS client, then run the edge runner."""
     config = load_config()
     logger.info("Config loaded for %s", config.machine_id)
-    logger.info(
-        "Using qubot_port=%s, satorius_port=%s, nats_servers=%s",
-        config.qubot_port,
-        config.satorius_port,
-        config.nats_servers,
-    )
+    logger.info("Full config: %s", config.model_dump())
 
-    logger.info("Initializing MOF PipQuBot driver")
+    logger.info("Initializing machine driver")
     driver = PipQuBotMOF(
         qubot_port=config.qubot_port,
         satorius_port=config.satorius_port,
     )
     driver.startup()
-    logger.info("MOF PipQuBot initialized successfully")
+    logger.info("Machine driver initialized successfully")
 
+    logger.info("Connecting to NATS at %s", config.nats_servers)
     edge_nats_client = EdgeNatsClient(
         servers=config.nats_server_list,
         machine_id=config.machine_id,
     )
 
-    async def telemetry_handler() -> None:
+    async def telemetry_handler():
         await edge_nats_client.publish_heartbeat()
         # Do not poll either serial controller from the heartbeat loop. The
         # controllers can block for their serial timeouts and make discovery
-        # intermittent; explicit get_position commands remain available.
-        all_temps = psutil.sensors_temperatures()
-        sensor = next(
-            (v[0] for k in ("coretemp", "cpu_thermal", "k10temp", "acpitz") if (v := all_temps.get(k))),
-            None,
-        )
-        await edge_nats_client.publish_health(
-            {
-                "cpu": psutil.cpu_percent(interval=None),
-                "mem": psutil.virtual_memory().percent,
-                "temp": sensor.current if sensor else None,
-            }
-        )
+        # intermittent.
+        sensor = None
+        if hasattr(psutil, "sensors_temperatures"):
+            all_temps = psutil.sensors_temperatures() or {}
+            sensor = next(
+                (v[0] for k in ("coretemp", "cpu_thermal", "k10temp", "acpitz") if (v := all_temps.get(k))),
+                None,
+            )
+        await edge_nats_client.publish_health({
+            "cpu": psutil.cpu_percent(interval=None),
+            "mem": psutil.virtual_memory().percent,
+            "temp": sensor.current if sensor else None,
+        })
 
     runner = EdgeRunner(
         nats_client=edge_nats_client,
@@ -101,13 +106,14 @@ async def main() -> None:
     await runner.run()
 
 
+# Run main in a loop; retry on fatal errors, exit gracefully on KeyboardInterrupt.
 if __name__ == "__main__":
     while True:
         try:
             asyncio.run(main())
         except KeyboardInterrupt:
-            logger.warning("Received KeyboardInterrupt; retrying")
-            time.sleep(1)
-        except Exception as exc:
-            logger.error("Fatal error: %s", exc, exc_info=True)
+            logger.warning("Gracefully stopping...")
+            sys.exit(0)
+        except Exception as e:
+            logger.error("Fatal error: %s", e, exc_info=True)
             time.sleep(5)

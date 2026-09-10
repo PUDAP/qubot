@@ -7,7 +7,10 @@ Monorepo for machine edge services and shared drivers.
 - `first-edge` — First machine edge service (serial ports for qubot and satorius)
 - `capper-edge` — Capper machine edge service (HTTP to qubot)
 - `pipqubot-mof-edge` — MOF PipQuBot edge service (serial ports for the GRBL gantry and Sartorius pipette)
+- `pescador-pipqubot-edge` — Pescador PipQuBot edge service (WebSocket gantry and Sartorius pipette)
 - `driver` — Shared machine drivers
+
+Each edge's `main.py` wraps the matching class in `qubot_drivers.machines`. Public hardware methods are marked `@command` so PUDA can advertise them.
 
 ## Prerequisites
 
@@ -65,6 +68,21 @@ Edit `pipqubot-mof-edge/.env` and configure:
 - `SATORIUS_PORT` (Sartorius pipette serial port)
 
 The Compose configuration maps stable `/dev/serial/by-id/...` device paths to the container paths configured by `QUBOT_PORT` and `SATORIUS_PORT`. Update `pipqubot-mof-edge/compose.yml` if your devices have different IDs.
+
+### pescador-pipqubot-edge
+
+From repo root:
+
+```bash
+cp pescador-pipqubot-edge/.env.example pescador-pipqubot-edge/.env
+```
+
+Edit `pescador-pipqubot-edge/.env` and configure:
+
+- `MACHINE_ID`
+- `NATS_SERVERS`
+- `QUBOT_IP`
+- `SATORIUS_PORT`
 
 ## Run With Docker (Recommended)
 
@@ -132,6 +150,26 @@ docker compose -f pipqubot-mof-edge/compose.yml down
 
 Starting this service connects both controllers, homes the gantry, and initializes the pipette.
 
+### pescador-pipqubot-edge
+
+Build and start:
+
+```bash
+docker compose -f pescador-pipqubot-edge/compose.yml up -d --build
+```
+
+View logs:
+
+```bash
+docker compose -f pescador-pipqubot-edge/compose.yml logs -f
+```
+
+Stop:
+
+```bash
+docker compose -f pescador-pipqubot-edge/compose.yml down
+```
+
 ## Run Baremetal (uv)
 
 From repo root:
@@ -141,6 +179,7 @@ uv sync --all-packages
 uv run --package first-edge python first-edge/main.py
 uv run --package capper-edge python capper-edge/main.py
 uv run --package pipqubot-mof-edge python pipqubot-mof-edge/main.py
+uv run --package pescador-pipqubot-edge python pescador-pipqubot-edge/main.py
 ```
 
 ## Build and Push Image (GHCR)
@@ -157,6 +196,7 @@ Build:
 docker compose -f first-edge/compose.yml build
 docker compose -f capper-edge/compose.yml build
 docker compose -f pipqubot-mof-edge/compose.yml build
+docker compose -f pescador-pipqubot-edge/compose.yml build
 ```
 
 Push:
@@ -165,6 +205,7 @@ Push:
 docker push ghcr.io/PUDAP/first-edge:latest
 docker push ghcr.io/PUDAP/capper-edge:latest
 docker push ghcr.io/pudap/pipqubot-mof-edge:latest
+docker push ghcr.io/pudap/pescador-pipqubot-edge:latest
 ```
 
 Or with Compose:
@@ -173,6 +214,7 @@ Or with Compose:
 docker compose -f first-edge/compose.yml push
 docker compose -f capper-edge/compose.yml push
 docker compose -f pipqubot-mof-edge/compose.yml push
+docker compose -f pescador-pipqubot-edge/compose.yml push
 ```
 
 ## Notes

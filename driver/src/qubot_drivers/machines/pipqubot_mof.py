@@ -13,6 +13,7 @@ from typing import Optional, Dict, Tuple, Union
 from qubot_drivers.move import GrblHALController, Deck
 from qubot_drivers import Position
 from qubot_drivers.satorius import SatoriusController
+from puda import command
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +119,7 @@ class PipQuBotMOF:
         time.sleep(3)  # need to wait for the pipette to initialize
         logger.info("Machine startup complete - ready for operations")
     
+    @command
     def home(self):
         """
         Home the qubot gantry to establish a known position.
@@ -131,6 +133,7 @@ class PipQuBotMOF:
         self.pipette.initialize()
         logger.info("Qubot gantry homing complete")
         
+    @command
     def shutdown(self):
         """
         Gracefully shut down the machine by disconnecting all controllers.
@@ -142,6 +145,7 @@ class PipQuBotMOF:
         self.pipette.disconnect()
         logger.info("Machine shutdown complete")
     
+    @command
     def wait(self, seconds: float):
         """
         Wait for a specified number of seconds.
@@ -168,6 +172,7 @@ class PipQuBotMOF:
             "pipette": satorius_position,
         }
     
+    @command
     def get_deck(self):
         """
         Get the current deck layout.
@@ -180,6 +185,7 @@ class PipQuBotMOF:
         """
         return self.deck.to_dict()
         
+    @command
     def load_labware(self, deck_slot: str, labware_name: str):
         """
         Load a labware object into a deck slot.
@@ -195,6 +201,7 @@ class PipQuBotMOF:
         self.deck.load_labware(slot=deck_slot, labware_name=labware_name)
         logger.debug("Labware '%s' loaded into deck slot '%s'", labware_name, deck_slot)
 
+    @command
     def remove_labware(self, deck_slot: str):
         """
         Remove labware from a deck slot.
@@ -208,6 +215,7 @@ class PipQuBotMOF:
         self.deck.empty_slot(slot=deck_slot)
         logger.debug("Deck slot '%s' emptied", deck_slot)
         
+    @command
     def load_deck(self, layout: Dict[str, str]):
         """
         Load multiple labware into the deck at once.
@@ -227,6 +235,7 @@ class PipQuBotMOF:
             self.load_labware(deck_slot=deck_slot, labware_name=labware_name)
         logger.info("Deck layout loaded successfully")
 
+    @command
     def move_to_well(self, *, deck_slot: str, well_name: str) -> Dict[str, float]:
         """Move to the top of a loaded labware well without liquid handling."""
         logger.info("Moving to deck slot '%s', well '%s'", deck_slot, well_name)
@@ -235,6 +244,7 @@ class PipQuBotMOF:
         logger.info("Move to well completed at %s", pos)
         return pos.to_dict()
 
+    @command
     def move_z_relative(self, *, distance_mm: float) -> Dict[str, float]:
         """Move only the Z axis by a signed relative distance in millimetres."""
         logger.info("Moving Z axis relative by %s mm", distance_mm)
@@ -243,6 +253,7 @@ class PipQuBotMOF:
         return pos.to_dict()
         
     ### Pipette operations ###
+    @command
     def attach_tip(self, deck_slot: str, well_name: str):
         """
         Attach a tip from a deck slot and well.
@@ -281,6 +292,7 @@ class PipQuBotMOF:
         self.qubot.home(axis="Z")
         logger.debug("Z axis homed after tip attachment")
         
+    @command
     def drop_tip(self, *, deck_slot: str, well_name: str, height_from_bottom: float = 0.0):
         """
         Drop a tip into a deck slot.
@@ -316,6 +328,7 @@ class PipQuBotMOF:
         self.pipette.set_tip_attached(attached=False)
         logger.info("Tip dropped successfully")
         
+    @command
     def aspirate_from(self, *, deck_slot: str, well_name: str, amount: int, height_from_bottom: float = 0.0):
         """
         Aspirate a volume of liquid from a deck slot.
@@ -354,6 +367,7 @@ class PipQuBotMOF:
         time.sleep(5)
         logger.info("Aspiration completed: %d µL from deck slot '%s', well '%s'", amount, deck_slot, well_name)
         
+    @command
     def dispense_to(self, *, deck_slot: str, well_name: str, amount: int, height_from_bottom: float = 0.0):
         """
         Dispense a volume of liquid to a deck slot.
@@ -392,6 +406,7 @@ class PipQuBotMOF:
         time.sleep(5)
         logger.info("Dispense completed: %d µL to deck slot '%s', well '%s'", amount, deck_slot, well_name)
         
+    @command
     def blowout(self, *, return_position: Optional[int] = None):
         """
         Blow out the pipette.
@@ -478,20 +493,35 @@ class PipQuBotMOF:
     
     ### Control (immediate commands) ###
     
+    @command
     def pause(self):
         """
         Pause the execution of queued commands.
         """
         print("Pausing machine")
     
+    @command
     def resume(self):
         """
         Resume the execution of queued commands.
         """
         print("Resuming machine")
 
+    @command
     def cancel(self):
         """
         Cancel the execution of queued commands.
         """
         print("Cancelling machine")
+
+    @command
+    def reset(self) -> bool:
+        """
+        Software reset. Disconnects, reconnects, homes the gantry, and initializes the pipette.
+
+        Returns:
+            bool: True if the machine restarted
+        """
+        self.shutdown()
+        self.startup()
+        return True

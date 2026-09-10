@@ -10,6 +10,7 @@ This class demonstrates the integration of:
 import logging
 import time
 from typing import Any, Optional, Dict, Tuple, Union
+from puda import command
 from qubot_drivers.move import RepRapController, Deck
 from qubot_drivers import Position
 from qubot_drivers.satorius import SatoriusController
@@ -121,6 +122,7 @@ class First:
         time.sleep(3)  # need to wait for the pipette to initialize
         logger.info("Machine startup complete - ready for operations")
     
+    @command
     def home(self):
         """
         Home the qubot gantry to establish a known position.
@@ -134,6 +136,7 @@ class First:
         self.pipette.initialize()
         logger.info("Qubot gantry homing complete")
         
+    @command
     def shutdown(self):
         """
         Gracefully shut down the machine by disconnecting all controllers.
@@ -145,6 +148,7 @@ class First:
         self.pipette.disconnect()
         logger.info("Machine shutdown complete")
     
+    @command
     def wait(self, seconds: float) -> Dict[str, float]:
         """
         Wait for a specified number of seconds.
@@ -175,6 +179,7 @@ class First:
             "pipette": satorius_position,
         }
     
+    @command
     def get_deck(self) -> Dict[str, str]:
         """
         Get the current deck layout.
@@ -187,6 +192,7 @@ class First:
         """
         return self.deck.to_dict()
         
+    @command
     def load_labware(self, deck_slot: str, labware_name: str) -> Dict[str, str]:
         """
         Load a labware object into a deck slot.
@@ -206,6 +212,7 @@ class First:
         logger.debug("Labware '%s' loaded into deck slot '%s'", labware_name, deck_slot)
         return {"deck_slot": deck_slot.upper(), "labware_name": labware_name}
 
+    @command
     def remove_labware(self, deck_slot: str) -> Dict[str, str]:
         """
         Remove labware from a deck slot.
@@ -223,6 +230,7 @@ class First:
         logger.debug("Deck slot '%s' emptied", deck_slot)
         return {"deck_slot": deck_slot.upper()}
         
+    @command
     def load_deck(self, layout: Dict[str, str]) -> Dict[str, Dict[str, str | None]]:
         """
         Load multiple labware into the deck at once.
@@ -247,6 +255,7 @@ class First:
         return {"layout": self.get_deck()}
         
     ### Pipette operations ###
+    @command
     def attach_tip(self, deck_slot: str, well_name: str) -> Dict[str, bool]:
         """
         Attach a tip from a deck slot and well.
@@ -289,6 +298,7 @@ class First:
         logger.debug("Z axis homed after tip attachment")
         return {"skipped": False}
         
+    @command
     def drop_tip(self, *, deck_slot: str, well_name: str, height_from_bottom: float = 0.0) -> Dict[str, Any]:
         """
         Drop a tip into a deck slot.
@@ -332,6 +342,7 @@ class First:
             "height_from_bottom": height_from_bottom,
         }
         
+    @command
     def aspirate_from(self, *, deck_slot: str, well_name: str, amount: int, height_from_bottom: float = 0.0) -> Dict[str, Any]:
         """
         Aspirate a volume of liquid from a deck slot.
@@ -379,6 +390,7 @@ class First:
             "height_from_bottom": height_from_bottom,
         }
         
+    @command
     def dispense_to(self, *, deck_slot: str, well_name: str, amount: int, height_from_bottom: float = 0.0) -> Dict[str, Any]:
         """
         Dispense a volume of liquid to a deck slot.
@@ -426,6 +438,7 @@ class First:
             "height_from_bottom": height_from_bottom,
         }
         
+    @command
     def blowout(self, *, return_position: Optional[int] = None) -> Dict[str, Any]:
         """
         Blow out the pipette.
@@ -442,6 +455,7 @@ class First:
         return {"return_position": return_position}
 
     # Electrode operations
+    @command
     def move_electrode(self, deck_slot: str, well_name: str, height_from_bottom: float = 0.0) -> Dict[str, Any]:
         """
         Move the electrode to a deck slot.
@@ -571,24 +585,28 @@ class First:
         return pos
 
     ### Control (immediate commands) ###
+    @command
     def pause(self):
         """
         Pause the execution of queued commands.
         """
         logger.info("Pausing machine")
     
+    @command
     def resume(self):
         """
         Resume the execution of queued commands.
         """
         logger.info("Resuming machine")
 
+    @command
     def cancel(self):
         """
         Cancel the execution of queued commands.
         """
         logger.info("Cancelling machine")
         
+    @command
     def reset(self):
         """
         Reset the machine to its initial state.

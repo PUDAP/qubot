@@ -1,18 +1,19 @@
 """
-Main entry point for the Capper machine edge service.
+Main entry point for the capper machine edge service.
 
-This module provides the main event loop for the Capper machine, handling command
+This module provides the main event loop for the tube capper, handling command
 execution via NATS messaging, telemetry publishing, and connection management.
 """
+
 import asyncio
 import logging
 import sys
 import time
-from pathlib import Path
 import psutil
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from qubot_drivers.machines.capper import Capper
 from puda import EdgeNatsClient, EdgeRunner
+from qubot_drivers.machines.capper import Capper
 
 
 # Configure logging
@@ -23,6 +24,7 @@ logging.basicConfig(
 )
 logging.getLogger("qubot_drivers").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
+
 
 # Environment configuration
 class Config(BaseSettings):
@@ -40,17 +42,18 @@ class Config(BaseSettings):
     def nats_server_list(self) -> list[str]:
         return [s.strip() for s in self.nats_servers.split(",") if s.strip()]
 
+
 def load_config() -> Config:
     """Load and validate configuration; exit process on failure."""
     try:
         return Config()
     except Exception as e:
-        logger.error("Failed to load configuration: %s", e)
+        logger.error("Failed to load configuration: %s", e, exc_info=True)
         sys.exit(1)
 
 
 async def main():
-    """Initialize the Capper machine driver and NATS client, then run the edge runner."""
+    """Initialize the machine driver and NATS client, then run the edge runner."""
     config = load_config()
     logger.info("Config loaded for %s", config.machine_id)
     logger.info("Full config: %s", config.model_dump())
@@ -58,7 +61,7 @@ async def main():
     logger.info("Initializing machine driver")
     driver = Capper(qubot_ip=config.qubot_ip)
     driver.startup()
-    logger.info("Capper machine initialized successfully")
+    logger.info("Machine driver initialized successfully")
 
     logger.info("Connecting to NATS at %s", config.nats_servers)
     edge_nats_client = EdgeNatsClient(
@@ -69,8 +72,13 @@ async def main():
     async def telemetry_handler():
         await edge_nats_client.publish_heartbeat()
         await edge_nats_client.publish_position(driver.get_position())
-        all_temps = psutil.sensors_temperatures()
-        sensor = next((v[0] for k in ("coretemp", "cpu_thermal", "k10temp", "acpitz") if (v := all_temps.get(k))), None)
+        sensor = None
+        if hasattr(psutil, "sensors_temperatures"):
+            all_temps = psutil.sensors_temperatures() or {}
+            sensor = next(
+                (v[0] for k in ("coretemp", "cpu_thermal", "k10temp", "acpitz") if (v := all_temps.get(k))),
+                None,
+            )
         await edge_nats_client.publish_health({
             "cpu": psutil.cpu_percent(interval=None),
             "mem": psutil.virtual_memory().percent,
@@ -81,6 +89,7 @@ async def main():
         nats_client=edge_nats_client,
         machine_driver=driver,
         telemetry_handler=telemetry_handler,
+        state_handler=lambda: {},
     )
     await runner.connect()
     logger.info("NATS client initialized successfully")
@@ -91,14 +100,14 @@ async def main():
     await runner.run()
 
 
-# Run main in a loop; retry on fatal errors, ignore KeyboardInterrupt.
+# Run main in a loop; retry on fatal errors, exit gracefully on KeyboardInterrupt.
 if __name__ == "__main__":
     while True:
         try:
             asyncio.run(main())
         except KeyboardInterrupt:
-            logger.warning("Received KeyboardInterrupt, but continuing to run...")
-            time.sleep(1)
+            logger.warning("Gracefully stopping...")
+            sys.exit(0)
         except Exception as e:
             logger.error("Fatal error: %s", e, exc_info=True)
             time.sleep(5)
