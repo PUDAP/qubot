@@ -425,7 +425,7 @@ class GrblHALController(SerialController):
         # Check if any movement is needed
         needs_x_move = abs(position.x - self._current_position.x) > self.TOLERANCE
         needs_y_move = abs(position.y - self._current_position.y) > self.TOLERANCE
-        needs_z_move = abs(position.z - 0) > self.TOLERANCE
+        needs_z_move = abs(position.z - self._current_position.z) > self.TOLERANCE
         
         if not (needs_x_move or needs_y_move or needs_z_move):
             self._logger.warning(

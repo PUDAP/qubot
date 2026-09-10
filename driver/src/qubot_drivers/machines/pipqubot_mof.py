@@ -30,6 +30,7 @@ class PipQuBotMOF:
     # Pipette
     Z_ORIGIN = Position(x=0, y=0, z=0)
     TIP_LENGTH = 97 # Pipette tip length in mm
+    SARTORIUS_MICROLITER_PER_STEP = 2.5
 
     
     # Default axis limits - customize based on your hardware
@@ -83,7 +84,10 @@ class PipQuBotMOF:
         for axis, (min_val, max_val) in limits.items():
             self.qubot.set_axis_limits(axis, min_val, max_val)
 
-        self.pipette = SatoriusController(port_name=satorius_port)
+        self.pipette = SatoriusController(
+            port_name=satorius_port,
+            microliter_per_step=self.SARTORIUS_MICROLITER_PER_STEP,
+        )
 
         logger.info(
             "MOF PipQuBot initialized: qubot_port=%s, satorius_port=%s",
@@ -455,8 +459,17 @@ class PipQuBotMOF:
             pos += Position(x=mirrored_y, y=well_pos.x)
             # get z
             pos += Position(z=labware.get_height() - self.CEILING_HEIGHT)
-            # if tip attached, add tip length
-            if self.pipette.is_tip_attached():
+            # Trash-bin moves always assume a physical disposable tip is
+            # attached. A full home/Sartorius initialization can clear the
+            # software tip flag while leaving the physical tip in place.
+            assume_tip_for_trash = labware.name.startswith("trash_bin")
+            if self.pipette.is_tip_attached() or assume_tip_for_trash:
+                if assume_tip_for_trash and not self.pipette.is_tip_attached():
+                    logger.warning(
+                        "Applying the %s mm tip offset for trash labware '%s' despite cleared software tip state",
+                        self.TIP_LENGTH,
+                        labware.name,
+                    )
                 pos += Position(z=self.TIP_LENGTH)
             logger.debug("Absolute Z position for deck slot '%s', well '%s': %s", deck_slot, well_name, pos)
         else:

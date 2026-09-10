@@ -6,6 +6,7 @@ Reference: https://api.sartorius.com/document-hub/dam/download/34901/Sartorius-r
 
 import json
 import logging
+import re
 from typing import Dict, Optional
 
 from qubot_drivers.serialcontroller import SerialController
@@ -45,6 +46,7 @@ class SatoriusController(SerialController):
         port_name: Optional[str] = None,
         baudrate: int = DEFAULT_BAUDRATE,
         timeout: int = DEFAULT_TIMEOUT,
+        microliter_per_step: float = MICROLITER_PER_STEP,
     ):
         super().__init__(port_name, baudrate, timeout)
         self._logger = logging.getLogger("qubot_drivers.satorius")
@@ -56,6 +58,7 @@ class SatoriusController(SerialController):
         )
         self._tip_attached: bool = False
         self._volume: int = 0
+        self._microliter_per_step = microliter_per_step
 
     def _build_command(self, command: str, value: Optional[str] = None) -> str:
         return (
@@ -65,6 +68,31 @@ class SatoriusController(SerialController):
             + (f"{value}" if value else "")
             + self.PROTOCOL_TERMINATOR
         )
+
+    def execute(
+        self,
+        command: str,
+        value: Optional[str] = None,
+        timeout: Optional[int] = None,
+    ) -> str:
+        if timeout is None:
+            response = super().execute(command=command, value=value)
+        else:
+            response = super().execute(command=command, value=value, timeout=timeout)
+        match = re.search(r"er([1-4])", response.lower())
+        if match:
+            error_messages = {
+                "1": "command not understood",
+                "2": "command would result in an out-of-bounds state",
+                "3": "checksum mismatch",
+                "4": "drive is busy and cannot answer the command",
+            }
+            error_code = match.group(1)
+            raise SatoriusDeviceError(
+                f"Sartorius rejected {command}: er{error_code} "
+                f"({error_messages[error_code]})"
+            )
+        return response
 
     def _validate_speed(self, speed: int, direction: str = "speed") -> None:
         if not self.MIN_SPEED <= speed <= self.MAX_SPEED:
@@ -140,7 +168,7 @@ class SatoriusController(SerialController):
         if amount <= 0:
             raise ValueError(f"Aspiration amount must be positive, got {amount}")
 
-        steps = int(amount / self.MICROLITER_PER_STEP)
+        steps = int(amount / self._microliter_per_step)
         self._logger.info("** Aspirating %s uL (RI%s steps) **", amount, steps)
         self.execute(command="RI", value=str(steps))
         self._logger.info("** Aspirated %s uL Successfully **\n", amount)
@@ -150,7 +178,17 @@ class SatoriusController(SerialController):
         if amount <= 0:
             raise ValueError(f"Dispense amount must be positive, got {amount}")
 
-        steps = int(amount / self.MICROLITER_PER_STEP)
+        if amount == self._volume:
+            self._logger.info(
+                "** Dispensing full aspirated volume %s uL with blowout (RB) **",
+                amount,
+            )
+            self.run_blowout()
+            self._reset_volume()
+            self._logger.info("** Dispensed %s uL Successfully **\n", amount)
+            return
+
+        steps = int(amount / self._microliter_per_step)
         self._logger.info("** Dispensing %s uL (RO%s steps) **", amount, steps)
         self.execute(command="RO", value=str(steps))
         self._logger.info("** Dispensed %s uL Successfully **\n", amount)

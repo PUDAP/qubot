@@ -7,7 +7,7 @@
     "brand": "custom"
   },
   "metadata": {
-    "displayName": "Trash Bin"
+    "displayName": "Trash Bin create"
   },
   "dimensions": {
     "xDimension": 127.76,
@@ -20,7 +20,7 @@
       "shape": "rectangular",
       "width": 10.0,
       "height": 10.0,
-      "x": 60.0,
+      "x": -60.0,
       "y": 42.0,
       "z": 0.0
     }

@@ -23,13 +23,13 @@ class TestDeckToDict:
         """Test to_dict() on a deck with labware loaded."""
         deck = Deck(rows=2, cols=2)
         deck.load_labware("A1", "opentrons_96_tiprack_300ul")
-        deck.load_labware("B2", "trash_bin")
+        deck.load_labware("B2", "trash_bin_mof")
         
         result = deck.to_dict()
         
         # Check that loaded labware have their names
-        assert result["A1"] == "Opentrons OT-2 96 Tip Rack 300 µL"
-        assert result["B2"] == "Trash Bin"
+        assert result["A1"] == "opentrons_96_tiprack_300ul"
+        assert result["B2"] == "trash_bin_mof"
         
         # Check that unloaded slots are None
         assert result["A2"] is None
@@ -47,8 +47,8 @@ class TestDeckToDict:
         assert len(result) == 9
         
         # Check loaded slots
-        assert result["A1"] == "Opentrons OT-2 96 Tip Rack 300 µL"
-        assert result["C3"] == "Polyelectric 8 Well Plate 30000 µL"
+        assert result["A1"] == "opentrons_96_tiprack_300ul"
+        assert result["C3"] == "polyelectric_8_wellplate_30000ul"
         
         # Check some empty slots
         assert result["A2"] is None
@@ -60,17 +60,17 @@ class TestDeckToDict:
         """Test to_dict() when all slots are filled."""
         deck = Deck(rows=2, cols=2)
         deck.load_labware("A1", "opentrons_96_tiprack_300ul")
-        deck.load_labware("A2", "trash_bin")
+        deck.load_labware("A2", "trash_bin_mof")
         deck.load_labware("B1", "polyelectric_8_wellplate_30000ul")
         deck.load_labware("B2", "opentrons_96_tiprack_300ul")
         
         result = deck.to_dict()
         
         # All slots should have labware names
-        assert result["A1"] == "Opentrons OT-2 96 Tip Rack 300 µL"
-        assert result["A2"] == "Trash Bin"
-        assert result["B1"] == "Polyelectric 8 Well Plate 30000 µL"
-        assert result["B2"] == "Opentrons OT-2 96 Tip Rack 300 µL"
+        assert result["A1"] == "opentrons_96_tiprack_300ul"
+        assert result["A2"] == "trash_bin_mof"
+        assert result["B1"] == "polyelectric_8_wellplate_30000ul"
+        assert result["B2"] == "opentrons_96_tiprack_300ul"
         
         # No None values
         assert None not in result.values()
@@ -98,7 +98,7 @@ class TestDeckToJson:
         """Test to_json() on a deck with labware loaded."""
         deck = Deck(rows=2, cols=2)
         deck.load_labware("A1", "opentrons_96_tiprack_300ul")
-        deck.load_labware("B2", "trash_bin")
+        deck.load_labware("B2", "trash_bin_mof")
         
         json_str = deck.to_json()
         
@@ -111,14 +111,14 @@ class TestDeckToJson:
         
         # Should contain labware names in the parsed JSON (checking parsed values
         # instead of raw string since JSON serialization may escape Unicode characters)
-        assert parsed["A1"] == "Opentrons OT-2 96 Tip Rack 300 µL"
-        assert parsed["B2"] == "Trash Bin"
+        assert parsed["A1"] == "opentrons_96_tiprack_300ul"
+        assert parsed["B2"] == "trash_bin_mof"
 
     def test_to_json_matches_to_dict(self):
         """Test that to_json() when parsed matches to_dict() output."""
         deck = Deck(rows=3, cols=3)
         deck.load_labware("A1", "opentrons_96_tiprack_300ul")
-        deck.load_labware("B2", "trash_bin")
+        deck.load_labware("B2", "trash_bin_mof")
         deck.load_labware("C3", "polyelectric_8_wellplate_30000ul")
         
         dict_result = deck.to_dict()
@@ -129,9 +129,9 @@ class TestDeckToJson:
         assert dict_result == json_result
         
         # Verify structure
-        assert json_result["A1"] == "Opentrons OT-2 96 Tip Rack 300 µL"
-        assert json_result["B2"] == "Trash Bin"
-        assert json_result["C3"] == "Polyelectric 8 Well Plate 30000 µL"
+        assert json_result["A1"] == "opentrons_96_tiprack_300ul"
+        assert json_result["B2"] == "trash_bin_mof"
+        assert json_result["C3"] == "polyelectric_8_wellplate_30000ul"
         assert json_result["A2"] is None
 
     def test_to_json_indentation(self):
@@ -156,7 +156,7 @@ class TestDeckToJson:
         """Test that to_json() output can be loaded and matches original."""
         deck = Deck(rows=2, cols=2)
         deck.load_labware("A1", "opentrons_96_tiprack_300ul")
-        deck.load_labware("B2", "trash_bin")
+        deck.load_labware("B2", "trash_bin_mof")
         
         original_dict = deck.to_dict()
         json_str = deck.to_json()

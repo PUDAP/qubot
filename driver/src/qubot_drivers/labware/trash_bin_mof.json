@@ -1,0 +1,43 @@
+{
+  "ordering": [
+    ["A1"]
+  ],
+  "brand": {
+    "brand": "custom"
+  },
+  "metadata": {
+    "displayName": "Bin 1 Reservoir 1000 µL"
+  },
+  "dimensions": {
+    "xDimension": 128,
+    "yDimension": 85.5,
+    "zDimension": 91
+  },
+  "wells": {
+    "A1": {
+      "depth": 83,
+      "totalLiquidVolume": 1000,
+      "shape": "rectangular",
+      "width": 127.0,
+      "height": 84.4,
+      "x": 5,
+      "y": 43.3,
+      "z": 8
+    }
+  },
+  "groups": [
+    {
+      "metadata": {},
+      "wells": [
+        "A1"
+      ]
+    }
+  ],
+  "version": 1,
+  "schemaVersion": 2,
+  "cornerOffsetFromSlot": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+  }
+}
