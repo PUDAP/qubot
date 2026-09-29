@@ -10,11 +10,21 @@ Supports homing and position synchronization.
 import re
 import logging
 import asyncio
+import math
 from dataclasses import dataclass
 from typing import Optional, Dict, Tuple, Union
 
 from qubot_drivers.serialcontroller import SerialController
 from qubot_drivers.position import Position
+
+
+@dataclass(frozen=True)
+class GrblStatusReport:
+    """One parsed GRBL realtime status report."""
+
+    state: str
+    position: Position
+    raw: str
 
 
 @dataclass
@@ -34,6 +44,8 @@ class AxisLimits:
         Raises:
             ValueError: If value is outside the limits
         """
+        if not math.isfinite(value):
+            raise ValueError(f"Value {value} must be finite")
         if not (self.min <= value <= self.max):
             raise ValueError(
                 f"Value {value} outside axis limits [{self.min}, {self.max}]"
@@ -158,14 +170,34 @@ class GrblHALController(SerialController):
         """
         return f"{command}{self.PROTOCOL_TERMINATOR}"
 
-    def _wait_for_move(self) -> None:
+    def _execute_checked(self, command: str, timeout: Optional[int] = None) -> str:
+        """Execute a motion-related command and require a terminal ``ok`` response."""
+        response = (
+            self.execute(command=command)
+            if timeout is None
+            else self.execute(command=command, timeout=timeout)
+        )
+        if not isinstance(response, str):
+            raise RuntimeError(f"Command {command} failed: no valid response")
+
+        lines = [line.strip() for line in response.splitlines() if line.strip()]
+        lowered = [line.lower() for line in lines]
+        if (
+            not lines
+            or any(line.startswith(("error", "alarm")) for line in lowered)
+            or lowered[-1] != "ok"
+        ):
+            raise RuntimeError(f"Command {command} failed: {response}")
+        return response
+
+    def _wait_for_move(self, timeout: Optional[int] = None) -> None:
         """
         Wait for the current move to complete (G4 P0 command).
         
         This sends the G4 P0 command which waits for all moves in the queue to complete
         before continuing. This ensures that position updates are accurate.
         """
-        self.execute("G4 P0")
+        self._execute_checked("G4 P0", timeout=timeout)
 
     def _validate_axis(self, axis: str) -> str:
         """
@@ -246,6 +278,8 @@ class GrblHALController(SerialController):
         """
         axis = self._validate_axis(axis)
 
+        if not (math.isfinite(min_val) and math.isfinite(max_val)):
+            raise ValueError("axis limits must be finite")
         if min_val >= max_val:
             raise ValueError("min must be < max")
 
@@ -275,7 +309,36 @@ class GrblHALController(SerialController):
         axis = self._validate_axis(axis)
         return self._axis_limits[axis]
 
-    def home(self, axis: Optional[str] = None) -> None:
+    def read_status(self) -> GrblStatusReport:
+        """
+        Query one realtime status report and require state plus XYZ MPos.
+
+        Raises:
+            RuntimeError: If the controller returns no complete status report.
+        """
+        raw = self.execute("?")
+        if not isinstance(raw, str) or not raw.strip():
+            raise RuntimeError(f"GRBL status query failed: {raw!r}")
+
+        state_match = re.search(r"<([^|>]+)", raw)
+        mpos_match = re.search(
+            r"MPos:(-?[\d.]+),(-?[\d.]+),(-?[\d.]+)",
+            raw,
+        )
+        if state_match is None or mpos_match is None:
+            raise RuntimeError(f"GRBL status report is incomplete: {raw!r}")
+
+        return GrblStatusReport(
+            state=state_match.group(1),
+            position=Position(
+                x=float(mpos_match.group(1)),
+                y=float(mpos_match.group(2)),
+                z=float(mpos_match.group(3)),
+            ),
+            raw=raw,
+        )
+
+    def home(self, axis: Optional[str] = None, *, verify_origin: bool = False) -> None:
         """
         Home one or all axes ($H command).
 
@@ -295,7 +358,10 @@ class GrblHALController(SerialController):
             home_target = "All"
 
         self._logger.info("[%s] homing axis/axes: %s **", cmd, home_target)
-        self.execute(command=cmd, timeout=90) # 90 seconds timeout for homing
+        self._execute_checked(command=cmd, timeout=90) # 90 seconds timeout for homing
+        if verify_origin:
+            report = self.read_status()
+            self._require_verified_home(report, axis)
         self._logger.info("Homing of %s completed.\n", home_target)
 
         # Update internal position (optimistic zeroing)
@@ -309,10 +375,31 @@ class GrblHALController(SerialController):
             self._current_position,
         )
 
+    def _require_verified_home(
+        self,
+        report: GrblStatusReport,
+        axis: Optional[str],
+    ) -> None:
+        """Require Idle and a zero machine position for the homed axes."""
+        axes = (axis.lower(),) if axis else ("x", "y", "z")
+        mismatches = {
+            name: getattr(report.position, name)
+            for name in axes
+            if abs(getattr(report.position, name)) > self.TOLERANCE
+        }
+        if report.state != "Idle" or mismatches:
+            raise RuntimeError(
+                "Homing did not finish Idle at controller zero: "
+                f"state={report.state}, mpos={report.position}"
+            )
+
     def move_absolute(
         self,
         position: Position,
         feed: Optional[int] = None,
+        *,
+        apply_safe_z: bool = True,
+        timeout: Optional[int] = None,
     ) -> Position:
         """
         Move to an absolute position (G90 + G1 command).
@@ -345,7 +432,9 @@ class GrblHALController(SerialController):
 
         return self._execute_move(
             position=position,
-            feed=feed_rate
+            feed=feed_rate,
+            apply_safe_z=apply_safe_z,
+            timeout=timeout,
         )
 
     def move_relative(
@@ -408,6 +497,9 @@ class GrblHALController(SerialController):
         self,
         position: Position,
         feed: int,
+        *,
+        apply_safe_z: bool = True,
+        timeout: Optional[int] = None,
     ) -> Position:
         """
         Internal helper for executing G1 move commands with safe movement pattern.
@@ -433,8 +525,32 @@ class GrblHALController(SerialController):
             )
             return
 
+        # Validate generated waypoints before transmitting any command. The safe
+        # Z lift is part of the move path and must remain inside configured limits.
+        if apply_safe_z and (needs_x_move or needs_y_move):
+            self._validate_move_positions(Position(z=self.SAFE_MOVE_HEIGHT))
+
         # Step 0: Ensure absolute mode is active
-        self.execute("G90")
+        self._execute_checked("G90", timeout=timeout)
+
+        if not apply_safe_z:
+            move_cmd = "G1"
+            if needs_x_move:
+                move_cmd += f" X{position.x}"
+            if needs_y_move:
+                move_cmd += f" Y{position.y}"
+            if needs_z_move:
+                move_cmd += f" Z{position.z}"
+            move_cmd += f" F{feed}"
+            self._execute_checked(move_cmd, timeout=timeout)
+            self._wait_for_move(timeout=timeout)
+            if needs_x_move:
+                self._current_position.x = position.x
+            if needs_y_move:
+                self._current_position.y = position.y
+            if needs_z_move:
+                self._current_position.z = position.z
+            return self._current_position
 
         # Step 1: Move Z to SAFE_MOVE_HEIGHT if XY movement is needed
         if needs_x_move or needs_y_move:
@@ -442,7 +558,7 @@ class GrblHALController(SerialController):
                 "Safe move: Raising Z to safe height (%s) before XY movement", self.SAFE_MOVE_HEIGHT
             )
             move_cmd = f"G1 Z{self.SAFE_MOVE_HEIGHT} F{self._z_feed}"
-            self.execute(move_cmd)
+            self._execute_checked(move_cmd)
             self._wait_for_move()
             self._current_position.z = self.SAFE_MOVE_HEIGHT
             self._logger.debug("Z moved to safe height (%s)", self.SAFE_MOVE_HEIGHT)
@@ -459,7 +575,7 @@ class GrblHALController(SerialController):
             move_cmd += f" F{feed}"
 
             self._logger.debug("Executing XY move command: %s", move_cmd)
-            self.execute(move_cmd)
+            self._execute_checked(move_cmd)
             self._wait_for_move()
 
             # Update position for moved axes
@@ -471,7 +587,7 @@ class GrblHALController(SerialController):
         # Step 3: Move Z to target
         if needs_z_move:
             move_cmd = f"G1 Z{position.z} F{self._z_feed}"
-            self.execute(move_cmd)
+            self._execute_checked(move_cmd)
             self._wait_for_move()
             self._current_position.z = position.z
         self._logger.debug("New internal position: %s", self._current_position)
@@ -597,13 +713,13 @@ class GrblHALController(SerialController):
 
     def get_info(self) -> str:
         """
-        Query machine information (M115 command).
+        Query GRBL build information ($I command).
 
         Returns:
-            Machine information string from the device
+            Machine build information string from the device
         """
-        self._logger.info("Querying machine information (M115).")
-        return self.execute("M115")
+        self._logger.info("Querying GRBL build information ($I).")
+        return self.execute("$I")
 
     def get_internal_position(self) -> Position:
         """
