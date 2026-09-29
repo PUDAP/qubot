@@ -1,0 +1,17 @@
+[project]
+name = "miniqubot-edge"
+version = "0.1.0"
+description = "PUDA edge service for the empty-head MiniQubot"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "qubot-drivers",
+    "puda>=0.0.17",
+    "pydantic>=2.12.5",
+    "pydantic-settings>=2.12.0",
+    "python-dotenv>=1.2.1",
+    "psutil>=6.0.0",
+]
+
+[tool.uv.sources]
+qubot-drivers = {workspace=true}
