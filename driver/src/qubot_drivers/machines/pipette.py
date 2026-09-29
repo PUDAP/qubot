@@ -1,15 +1,15 @@
 """
-Pipette machine class containing GrblWSController and SatoriusController.
+Pipette machine class containing GrblTelnetController and SatoriusController.
 
 This class integrates:
-- GrblWSController: Handles motion control over WebSocket (hardware-specific)
+- GrblTelnetController: Handles motion control over grblHAL NETCON Telnet
 - SatoriusController: Handles liquid handling operations
 """
 
 import logging
 import time
 from typing import Any, Dict, Optional, Union
-from qubot_drivers.move.grbl_ws import GrblWSController
+from qubot_drivers.move.grbl_telnet import GrblTelnetController
 from qubot_drivers.position import Position
 from qubot_drivers.satorius import SatoriusController
 from puda import command
@@ -31,7 +31,7 @@ class Pipette:
         qubot_ip and satorius_port must both be specified; otherwise ValueError is raised.
 
         Args:
-            qubot_ip: IP address for GrblWSController (e.g., '192.168.2.113').
+            qubot_ip: IP address for GrblTelnetController (e.g., '192.168.2.113').
             satorius_port: Serial port for SatoriusController (e.g., '/dev/ttyUSB0').
 
         Raises:
@@ -42,7 +42,7 @@ class Pipette:
         if satorius_port is None:
             raise ValueError("satorius_port is required")
 
-        self.qubot = GrblWSController(host=qubot_ip)
+        self.qubot = GrblTelnetController(host=qubot_ip)
         self.pipette = SatoriusController(port_name=satorius_port)
 
         logger.info(
@@ -56,21 +56,17 @@ class Pipette:
         Start up the machine by connecting all controllers and initializing subsystems.
 
         This method:
-        - Connects to all controllers (gantry, pipette)
+        - Connects to the gantry controller
         - Homes the gantry to establish a known position
-        - Initializes the pipette to reset it to a known state
+        - Connects to and initializes the pipette to reset it to a known state
 
         The machine is ready for operations after this method completes.
         """
-        logger.info("Starting up machine and connecting all controllers")
+        logger.info("Starting up machine and connecting gantry controller")
         self.qubot.connect()
-        self.pipette.connect()
-        logger.info("All controllers connected successfully")
 
-        logger.info("Homing gantry...")
+        logger.info("Homing gantry and initializing pipette...")
         self.home()
-        logger.info("Initializing pipette...")
-        self.pipette.initialize()
         time.sleep(3)  # need to wait for the pipette to initialize
         logger.info("Machine startup complete - ready for operations")
 
@@ -79,6 +75,10 @@ class Pipette:
         """Home the qubot gantry and reinitialize the pipette."""
         logger.info("Homing qubot gantry...")
         self.qubot.home()
+        # Reconnect after gantry homing: an idle serial session can stop responding.
+        if self.pipette.is_connected:
+            self.pipette.disconnect()
+        self.pipette.connect()
         self.pipette.initialize()
         logger.info("Qubot gantry homing complete")
 
