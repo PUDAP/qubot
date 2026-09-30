@@ -136,3 +136,6 @@ logs/
 
 # captures
 captures/
+
+# Local MiniQubot commissioning captures
+miniqubot_*.json
