@@ -6,7 +6,6 @@ This class integrates:
 """
 
 import logging
-import time
 from typing import Any, Dict, Optional
 
 from qubot_drivers.move.grbl_ws import GrblWSController
@@ -69,17 +68,6 @@ class Pescador:
         logger.info("Shutting down machine and disconnecting controllers")
         self.qubot.disconnect()
         logger.info("Machine shutdown complete")
-
-    def wait(self, seconds: float):
-        """
-        Wait for a specified number of seconds.
-
-        Args:
-            seconds: Number of seconds to wait (can be a float for fractional seconds)
-        """
-        logger.debug("Waiting for %.2f seconds", seconds)
-        time.sleep(seconds)
-        logger.debug("Waited for %.2f seconds", seconds)
 
     def move_to(self, x: float, y: float, z: float):
         """Move directly to an absolute position."""

@@ -7,10 +7,11 @@ This class demonstrates the integration of:
 - SatoriusController: Handles liquid handling operations
 """
 
+import asyncio
 import logging
 import time
 from typing import Any, Optional, Dict, Tuple, Union
-from puda import command
+from puda import command, machine_state, tlm_stream
 from qubot_drivers.move import RepRapController, Deck
 from qubot_drivers import Position
 from qubot_drivers.satorius import SatoriusController
@@ -98,7 +99,20 @@ class First:
             qubot_port,
             satorius_port,
         )
-        
+
+    ### State ###
+    @machine_state
+    def snapshot(self) -> Dict[str, Any]:
+        """Deck layout merged into MACHINE_STATE updates."""
+        return {"deck": self.deck.to_dict()}
+
+    ### Telemetry streams ###
+    @tlm_stream(interval=3.0, name="pos")
+    def position_stream(self) -> Dict[str, Union[Dict[str, float], int]]:
+        """Current position of the qubot gantry and pipette."""
+        # Runs in a worker thread with no event loop, so asyncio.run is safe here.
+        return asyncio.run(self.get_position())
+
     def startup(self):
         """
         Start up the machine by connecting all controllers and initializing subsystems.
@@ -148,22 +162,6 @@ class First:
         self.pipette.disconnect()
         logger.info("Machine shutdown complete")
     
-    @command
-    def wait(self, seconds: float) -> Dict[str, float]:
-        """
-        Wait for a specified number of seconds.
-        
-        Args:
-            seconds: Number of seconds to wait (can be a float for fractional seconds)
-
-        Returns:
-            Dictionary with the number of seconds waited.
-        """
-        logger.debug("Waiting for %.2f seconds", seconds)
-        time.sleep(seconds)
-        logger.debug("Waited for %.2f seconds", seconds)
-        return {"seconds": seconds}
-        
     ### Queue (public commands) ###
     async def get_position(self) -> Dict[str, Union[Dict[str, float], int]]:
         """
@@ -172,13 +170,10 @@ class First:
         Returns:
             Dictionary containing the current position of the machine and its components (qubot, pipette).
         """
-        qubot_position = await self.qubot.get_position()
-        satorius_position = self.pipette.get_position()
         return {
-            "qubot": qubot_position.to_dict(),
-            "pipette": satorius_position,
+            "qubot": (await self.qubot.get_position()).to_dict(),
+            "pipette": self.pipette.get_position(),
         }
-    
     @command
     def get_deck(self) -> Dict[str, str]:
         """

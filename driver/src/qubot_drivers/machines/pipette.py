@@ -12,7 +12,7 @@ from typing import Any, Dict, Optional, Union
 from qubot_drivers.move.grbl_ws import GrblWSController
 from qubot_drivers.position import Position
 from qubot_drivers.satorius import SatoriusController
-from puda import command
+from puda import command, tlm_stream
 
 logger = logging.getLogger(__name__)
 
@@ -91,22 +91,6 @@ class Pipette:
         logger.info("Machine shutdown complete")
 
     @command
-    def wait(self, seconds: float) -> Dict[str, float]:
-        """
-        Wait for a specified number of seconds.
-
-        Args:
-            seconds: Number of seconds to wait (can be a float for fractional seconds)
-
-        Returns:
-            Dictionary with the number of seconds waited.
-        """
-        logger.debug("Waiting for %.2f seconds", seconds)
-        time.sleep(seconds)
-        logger.debug("Waited for %.2f seconds", seconds)
-        return {"seconds": seconds}
-
-    @command
     def move_to(self, x: float, y: float, z: float):
         """
         Move the gantry directly to an absolute position.
@@ -141,6 +125,7 @@ class Pipette:
         self.qubot.g0(Position(z=z))
 
     @command
+    @tlm_stream(interval=3.0, name="pos")
     def get_position(self) -> Dict[str, Union[Dict[str, float], int]]:
         """
         Get the current position of the machine.

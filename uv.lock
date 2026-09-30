@@ -25,7 +25,6 @@ name = "capper-edge"
 version = "0.1.0"
 source = { virtual = "capper-edge" }
 dependencies = [
-    { name = "psutil" },
     { name = "puda" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -35,8 +34,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "psutil", specifier = ">=6.0.0" },
-    { name = "puda", specifier = ">=0.0.17" },
+    { name = "puda", specifier = ">=0.0.18" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
@@ -57,7 +55,6 @@ name = "first-edge"
 version = "0.1.0"
 source = { virtual = "first-edge" }
 dependencies = [
-    { name = "psutil" },
     { name = "puda" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -67,8 +64,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "psutil", specifier = ">=6.0.0" },
-    { name = "puda", specifier = ">=0.0.17" },
+    { name = "puda", specifier = ">=0.0.18" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
@@ -154,7 +150,6 @@ name = "pescador-pipqubot-edge"
 version = "0.1.0"
 source = { virtual = "pescador-pipqubot-edge" }
 dependencies = [
-    { name = "psutil" },
     { name = "puda" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -164,8 +159,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "psutil", specifier = ">=6.0.0" },
-    { name = "puda", specifier = ">=0.0.17" },
+    { name = "puda", specifier = ">=0.0.18" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
@@ -177,7 +171,6 @@ name = "pipqubot-mof-edge"
 version = "0.1.0"
 source = { virtual = "pipqubot-mof-edge" }
 dependencies = [
-    { name = "psutil" },
     { name = "puda" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -187,8 +180,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "psutil", specifier = ">=6.0.0" },
-    { name = "puda", specifier = ">=0.0.17" },
+    { name = "puda", specifier = ">=0.0.18" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
@@ -228,15 +220,16 @@ wheels = [
 
 [[package]]
 name = "puda"
-version = "0.0.17"
+version = "0.0.18"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "nats-py" },
+    { name = "psutil" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1f/4a/219e4d4b83db575d1298a57c538ceb3d6cd4e1fdad6d96e8ec308e451ce4/puda-0.0.17.tar.gz", hash = "sha256:bd1d483789b4ab9b47c3b95d98a68608e55e16fa2857ac2817a1dcc870958587", size = 36050, upload-time = "2026-09-09T06:40:43.001Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4b/90/07342df728d6c8623a7b0f10eec9c99e1392cfef098f6d8db6d193c89ac4/puda-0.0.18.tar.gz", hash = "sha256:4280723e0d43d22107f6e5b8d39edeeecbeb5c167c436a5f55154506085dbe93", size = 43553, upload-time = "2026-09-30T07:33:14.956Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fd/7f/cdf7eda7ac6957dcb7d82f1f2661eaab1fcc609c3cc2e91039b9538475d9/puda-0.0.17-py3-none-any.whl", hash = "sha256:a7d008bf77aaab131b18ab77f233fd0dbacb7daaff87acbd06191141e9442a87", size = 40831, upload-time = "2026-09-09T06:40:41.262Z" },
+    { url = "https://files.pythonhosted.org/packages/8a/53/5bd93db3d65c7d17774d3c717dfee4e5148b1c607eb1f4dfb277f4c3d1cb/puda-0.0.18-py3-none-any.whl", hash = "sha256:5819f5cd096143a8a06bb67262fbeac6f5fcc56ad2d16fc67e5479a947c4109b", size = 49151, upload-time = "2026-09-30T07:33:13.498Z" },
 ]
 
 [[package]]
@@ -373,7 +366,7 @@ requires-dist = [
     { name = "nats-py", specifier = ">=2.12.0" },
     { name = "numpy", specifier = "==2.4.2" },
     { name = "opencv-python", specifier = ">=4.12.0.88" },
-    { name = "puda", specifier = ">=0.0.17" },
+    { name = "puda", specifier = ">=0.0.18" },
     { name = "pyserial", specifier = "~=3.5" },
     { name = "websocket-client", specifier = ">=1.8.0" },
 ]

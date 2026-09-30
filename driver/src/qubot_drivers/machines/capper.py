@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional
 
 from qubot_drivers.move.reprap_http import RepRapHTTPController
 from qubot_drivers.position import Position
-from puda import command
+from puda import command, tlm_stream
 
 logger = logging.getLogger(__name__)
 
@@ -79,18 +79,6 @@ class Capper:
         logger.info("Machine shutdown complete")
 
     @command
-    def wait(self, seconds: float):
-        """
-        Wait for a specified number of seconds.
-
-        Args:
-            seconds: Number of seconds to wait (can be a float for fractional seconds)
-        """
-        logger.debug("Waiting for %.2f seconds", seconds)
-        time.sleep(seconds)
-        logger.debug("Waited for %.2f seconds", seconds)
-
-    @command
     def move_to(self, x: float, y: float, z: float):
         """Move directly to an absolute position."""
         self.qubot.g0(Position(x=x, y=y, z=z))
@@ -154,14 +142,14 @@ class Capper:
         """Place the held cap at the specified position."""
         self.safe_move_to(x, y, z)
         self.release_top()
-        self.wait(3)
+        time.sleep(3)
 
     @command
     def pick_cap_from(self, x: float, y: float, z: float):
         """Pick up a cap from the specified position."""
         self.safe_move_to(x, y, z)
         self.clamp_top()
-        self.wait(1)
+        time.sleep(1)
         self.qubot.g0(Position(z=self.Z_SAFE))
 
     @command
@@ -176,10 +164,11 @@ class Capper:
         self.qubot.set_absolute_mode()
 
         self.release_top()
-        self.wait(2)
+        time.sleep(2)
         self.qubot.g0(Position(z=self.Z_SAFE))
 
     @command
+    @tlm_stream(interval=3.0, name="pos")
     def get_position(self) -> Dict[str, float]:
         """
         Get the current gantry position.

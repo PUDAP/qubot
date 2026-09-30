@@ -139,17 +139,6 @@ class PipQuBotV3:
         self.pipette.disconnect()
         logger.info("Machine shutdown complete")
     
-    def wait(self, seconds: float):
-        """
-        Wait for a specified number of seconds.
-        
-        Args:
-            seconds: Number of seconds to wait (can be a float for fractional seconds)
-        """
-        logger.debug("Waiting for %.2f seconds", seconds)
-        time.sleep(seconds)
-        logger.debug("Waited for %.2f seconds", seconds)
-        
     ### Queue (public commands) ###
     async def get_position(self) -> Dict[str, Union[Dict[str, float], int]]:
         """

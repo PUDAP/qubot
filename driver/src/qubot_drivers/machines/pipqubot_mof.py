@@ -13,7 +13,7 @@ from typing import Optional, Dict, Tuple, Union
 from qubot_drivers.move import GrblHALController, Deck
 from qubot_drivers import Position
 from qubot_drivers.satorius import SatoriusController
-from puda import command
+from puda import command, machine_state
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,13 @@ class PipQuBotMOF:
             qubot_port,
             satorius_port,
         )
-        
+
+    ### State ###
+    @machine_state
+    def snapshot(self) -> Dict[str, Dict]:
+        """Deck layout merged into MACHINE_STATE updates."""
+        return {"deck": self.deck.to_dict()}
+
     def startup(self):
         """
         Start up the machine by connecting all controllers and initializing subsystems.
@@ -145,18 +151,6 @@ class PipQuBotMOF:
         self.pipette.disconnect()
         logger.info("Machine shutdown complete")
     
-    @command
-    def wait(self, seconds: float):
-        """
-        Wait for a specified number of seconds.
-        
-        Args:
-            seconds: Number of seconds to wait (can be a float for fractional seconds)
-        """
-        logger.debug("Waiting for %.2f seconds", seconds)
-        time.sleep(seconds)
-        logger.debug("Waited for %.2f seconds", seconds)
-        
     ### Queue (public commands) ###
     async def get_position(self) -> Dict[str, Union[Dict[str, float], int]]:
         """
@@ -171,7 +165,6 @@ class PipQuBotMOF:
             "qubot": qubot_position.to_dict(),
             "pipette": satorius_position,
         }
-    
     @command
     def get_deck(self):
         """
