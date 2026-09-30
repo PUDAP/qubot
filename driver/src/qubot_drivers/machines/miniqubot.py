@@ -86,6 +86,13 @@ class MiniQubot:
         self._homed = False
 
     @command
+    @safety(
+        summary="Homing drives every axis into its limit switch and can collide. The controller reports no lost-step feedback.",
+        hazards=["collision", "lost-steps"],
+        requires="Keep the motor-power cutoff reachable.",
+        forbidden_when="Do not home while the controller is disconnected or busy.",
+        confirm=False,
+    )
     def home(self) -> dict[str, float]:
         """
         Home all axes and require Idle at controller-reported zero.
@@ -103,7 +110,7 @@ class MiniQubot:
         hazards=["collision", "lost-steps"],
         requires="Home in this connection and keep the motor-power cutoff reachable.",
         forbidden_when="Do not move while the controller is disconnected, alarmed, or busy.",
-        confirm=True,
+        confirm=False,
     )
     def move_absolute(
         self,
@@ -138,7 +145,7 @@ class MiniQubot:
         hazards=["collision", "lost-steps"],
         requires="Home in this connection and keep the motor-power cutoff reachable.",
         forbidden_when="Do not move while the controller is disconnected, alarmed, or busy.",
-        confirm=True,
+        confirm=False,
     )
     def move_relative(
         self,

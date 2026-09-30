@@ -179,9 +179,9 @@ def test_miniqubot_is_not_a_pipette_or_capper_machine():
         "move_absolute",
         "move_relative",
     }
-    assert get_safety(MiniQubot.home) is None
-    assert get_safety(MiniQubot.move_absolute).confirm is True
-    assert get_safety(MiniQubot.move_relative).confirm is True
+    assert get_safety(MiniQubot.home).confirm is False
+    assert get_safety(MiniQubot.move_absolute).confirm is False
+    assert get_safety(MiniQubot.move_relative).confirm is False
     assert get_safety(MiniQubot.shutdown) is None
 
 

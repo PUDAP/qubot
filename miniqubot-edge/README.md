@@ -4,4 +4,4 @@ PUDA edge for the empty-head three-axis MiniQubot. It uses `GrblHALController` f
 
 Starting the service connects the GRBL serial port, checks `$I` and `$$`, then homes all axes. The gantry has commissioned limit switches on X, Y, and Z.
 
-Commands: `home`, `move_absolute`, `move_relative`, and `get_position`. The two move commands publish `@safety` confirmation. `home` does not.
+Commands: `home`, `move_absolute`, `move_relative`, and `get_position`. `home`, `move_absolute`, and `move_relative` publish `@safety` with `confirm=False`.
