@@ -119,8 +119,8 @@ class MiniQubot:
             x_mm: X target in millimeters.
             y_mm: Y target in millimeters.
             z_mm: Z target in millimeters.
-            feed_mm_min: Speed in millimeters per minute. Omitted uses 1500 for
-                XY and 200 for Z. A given value is sent unchanged.
+            feed_mm_min: Requested speed in millimeters per minute. Omitted uses
+                1500 for XY and 200 for Z. A given value is sent unchanged.
 
         Returns:
             dict[str, float]: Controller-reported XYZ position after the move.
@@ -154,8 +154,8 @@ class MiniQubot:
             dx_mm: X displacement in millimeters.
             dy_mm: Y displacement in millimeters.
             dz_mm: Z displacement in millimeters.
-            feed_mm_min: Speed in millimeters per minute. Omitted uses each
-                axis maximum. A given value is sent unchanged.
+            feed_mm_min: Requested speed in millimeters per minute. Omitted uses
+                1500 for XY and 200 for Z. A given value is sent unchanged.
 
         Returns:
             dict[str, float]: Controller-reported XYZ position after the move.
@@ -210,8 +210,9 @@ class MiniQubot:
             z_mm,
             feed_mm_min,
         )
+        report = current
+        motion_started = False
         try:
-            report = current
             for leg_x, leg_y, leg_z, leg_feed in legs:
                 distance_mm = math.dist(
                     (report.position.x, report.position.y, report.position.z),
@@ -228,7 +229,12 @@ class MiniQubot:
                     apply_safe_z=False,
                     timeout=timeout_s,
                 )
+                motion_started = True
                 report = self.qubot.read_status()
+        except ValueError:
+            if motion_started:
+                self._homed = False
+            raise
         except Exception:
             self._homed = False
             raise
@@ -254,7 +260,7 @@ class MiniQubot:
         z_mm: float,
         feed_mm_min: float | None,
     ) -> list[tuple[float, float, float, float]]:
-        """XY first, then Z. An omitted feed uses each axis maximum."""
+        """XY first, then Z. An omitted feed uses each axis default maximum."""
         xy_feed = XY_FEED_MM_MIN if feed_mm_min is None else feed_mm_min
         z_feed = Z_FEED_MM_MIN if feed_mm_min is None else feed_mm_min
         xy_changes = (

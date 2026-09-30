@@ -255,11 +255,12 @@ def test_specified_feed_is_not_replaced_by_the_axis_maximum():
     machine = MiniQubot(controller=controller)
     machine._homed = True
 
-    machine.move_absolute(10, -10, -5, feed_mm_min=80)
+    machine.move_absolute(10, -10, -5, feed_mm_min=1000)
     machine.move_absolute(12, -10, -5, feed_mm_min=400)
+    machine.move_absolute(12, -10, -8, feed_mm_min=50)
 
     moves = [call for call in controller.calls if isinstance(call, tuple) and call[0] == "move"]
-    assert [move[4] for move in moves] == [80.0, 80.0, 400.0]
+    assert [move[4] for move in moves] == [1000.0, 1000.0, 400.0, 50.0]
 
 
 def test_shutdown_disconnects_and_drops_homing():
@@ -291,6 +292,19 @@ def test_out_of_range_target_is_rejected_by_the_shared_grbl_limits():
         machine.move_absolute(176, 0, 0)
 
     assert commands == []
+    assert machine._homed is True
+
+
+def test_deadline_rejection_keeps_homing_and_sends_no_move():
+    controller = FakeController()
+    machine = MiniQubot(controller=controller)
+    machine._homed = True
+
+    with pytest.raises(ValueError, match="deadline"):
+        machine.move_absolute(175, -190, -75, feed_mm_min=0.1)
+
+    assert machine._homed is True
+    assert not any(isinstance(call, tuple) and call[0] == "move" for call in controller.calls)
 
 
 def test_axis_endpoints_accept_max_xyz_feed_and_xy_max_rate():
