@@ -13,7 +13,7 @@ def test_move_absolute_to_zero_moves_z_from_nonzero_position():
     }
     controller._current_position = Position(x=16.94, y=-288.32, z=-82.5)
     commands = []
-    controller.execute = commands.append
+    controller.execute = lambda command, **_kwargs: commands.append(command) or "ok"
     controller._wait_for_move = lambda: None
 
     result = controller.move_absolute(

@@ -1,0 +1,34 @@
+name: miniqubot-edge
+
+services:
+  miniqubot-edge:
+    build:
+      context: ..
+      dockerfile: miniqubot-edge/Dockerfile
+    image: ghcr.io/pudap/miniqubot-edge:0.1.0
+    container_name: miniqubot-edge
+    restart: unless-stopped
+    environment:
+      NATS_SERVERS: ${NATS_SERVERS:?required}
+      MACHINE_ID: ${MACHINE_ID:?required}
+      QUBOT_PORT: /dev/ttyUSB0
+    devices:
+      - source: "${MINIQUBOT_HOST_DEVICE:?required}"
+        target: /dev/ttyUSB0
+        permissions: rwm
+    group_add:
+      - "${MINIQUBOT_DIALOUT_GID:?required}"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - puda-active
+
+networks:
+  puda-active:
+    external: true
+    name: puda-active

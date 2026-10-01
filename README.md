@@ -7,6 +7,7 @@ Monorepo for machine edge services and shared drivers.
 - `first-edge` — First machine edge service (serial ports for qubot and satorius)
 - `capper-edge` — Capper machine edge service (HTTP to qubot)
 - `pipqubot-mof-edge` — MOF PipQuBot edge service (serial ports for the GRBL gantry and Sartorius pipette)
+- `miniqubot-edge` — MiniQubot edge service (one GRBL serial gantry, empty head; startup homes)
 - `pescador-pipqubot-edge` — Pescador PipQuBot edge service (WebSocket gantry and Sartorius pipette)
 - `driver` — Shared machine drivers
 
