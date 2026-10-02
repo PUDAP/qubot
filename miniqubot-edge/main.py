@@ -4,7 +4,6 @@ import asyncio
 import logging
 import sys
 import time
-import psutil
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -59,32 +58,9 @@ async def main():
         machine_id=config.machine_id,
     )
 
-    async def telemetry_handler():
-        await edge_nats_client.publish_heartbeat()
-        sensor = None
-        if hasattr(psutil, "sensors_temperatures"):
-            all_temps = psutil.sensors_temperatures() or {}
-            sensor = next(
-                (
-                    v[0]
-                    for k in ("coretemp", "cpu_thermal", "k10temp", "acpitz")
-                    if (v := all_temps.get(k))
-                ),
-                None,
-            )
-        await edge_nats_client.publish_health(
-            {
-                "cpu": psutil.cpu_percent(interval=None),
-                "mem": psutil.virtual_memory().percent,
-                "temp": sensor.current if sensor else None,
-            }
-        )
-
     runner = EdgeRunner(
         nats_client=edge_nats_client,
         machine_driver=driver,
-        telemetry_handler=telemetry_handler,
-        state_handler=lambda: {"homed": driver._homed},
     )
     await runner.connect()
     logger.info("%s edge service ready", config.machine_id)
