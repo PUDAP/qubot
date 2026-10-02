@@ -2,7 +2,7 @@
 
 import math
 
-from puda import command, safety
+from puda import command, machine_state, safety, tlm_stream
 from qubot_drivers.move.grblHAL import GrblHALController
 from qubot_drivers.position import Position
 
@@ -57,6 +57,7 @@ class MiniQubot:
             )
         self.qubot = controller
         self._homed = False
+        self._position: dict[str, float] | None = None
 
     def startup(self) -> None:
         """Connect, check identity and settings, then home all axes."""
@@ -79,6 +80,11 @@ class MiniQubot:
         for axis, (minimum, maximum) in AXIS_LIMITS.items():
             self.qubot.set_axis_limits(axis, minimum, maximum)
         self.home()
+
+    @machine_state
+    def snapshot(self) -> dict[str, bool | dict[str, float] | None]:
+        """Same-session homing flag and the last sampled XYZ position."""
+        return {"homed": self._homed, "position": self._position}
 
     def shutdown(self) -> None:
         """Close the serial port and drop same-session homing."""
@@ -176,6 +182,7 @@ class MiniQubot:
         )
 
     @command
+    @tlm_stream(interval=3.0, name="pos")
     def get_position(self) -> dict[str, float]:
         """
         Read controller-reported XYZ machine position.
@@ -184,7 +191,9 @@ class MiniQubot:
             dict[str, float]: X, Y, and Z in millimeters.
         """
         position = self.qubot.read_status().position
-        return {"x": position.x, "y": position.y, "z": position.z}
+        sample = {"x": position.x, "y": position.y, "z": position.z}
+        self._position = sample
+        return sample
 
     def _move_to(
         self,
@@ -255,7 +264,9 @@ class MiniQubot:
                 "Move finished away from the requested target: "
                 f"state={report.state}, position={report.position}"
             )
-        return {"x": report.position.x, "y": report.position.y, "z": report.position.z}
+        sample = {"x": report.position.x, "y": report.position.y, "z": report.position.z}
+        self._position = sample
+        return sample
 
     @staticmethod
     def _motion_legs(

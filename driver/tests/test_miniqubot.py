@@ -1,7 +1,11 @@
 import math
+from pathlib import Path
 
 import pytest
+from puda import EdgeNatsClient, EdgeRunner
 from puda.command import get_safety, resolve_command_names
+from puda.machine_state import find_machine_state_handler
+from puda.tlm_stream import get_tlm_stream_spec
 
 from qubot_drivers.move.grblHAL import GrblHALController, GrblStatusReport
 from qubot_drivers.position import Position
@@ -141,6 +145,7 @@ def test_specified_combined_feed_is_used_on_both_legs():
     ]
     assert all(move[5] is False for move in moves)
     assert result == {"x": 10.0, "y": -10.0, "z": -5.0}
+    assert machine.snapshot() == {"homed": True, "position": result}
 
 
 def test_move_is_refused_before_homing():
@@ -199,11 +204,65 @@ def test_startup_installs_axis_limits_before_homing():
 
 def test_get_position_returns_the_fresh_sample():
     controller = FakeController(position=(12.5, -3.0, -1.0))
-    assert MiniQubot(controller=controller).get_position() == {
+    machine = MiniQubot(controller=controller)
+    assert machine.get_position() == {
         "x": 12.5,
         "y": -3.0,
         "z": -1.0,
     }
+    assert machine.snapshot()["position"] == {
+        "x": 12.5,
+        "y": -3.0,
+        "z": -1.0,
+    }
+
+
+def test_position_stream_and_machine_state_are_cached():
+    spec = get_tlm_stream_spec(MiniQubot.get_position)
+    assert spec is not None
+    assert spec.name == "pos"
+    assert spec.interval == 3.0
+    assert get_tlm_stream_spec(MiniQubot.snapshot) is None
+    assert resolve_command_names(MiniQubot(controller=FakeController())) == {
+        "get_position",
+        "home",
+        "move_absolute",
+        "move_relative",
+    }
+
+    machine = MiniQubot(controller=FakeController(position=(1.0, -2.0, -3.0)))
+    handler = find_machine_state_handler(machine)
+    assert handler is not None
+    assert handler() == {"homed": False, "position": None}
+    machine.get_position()
+    machine._homed = True
+    assert handler() == {
+        "homed": True,
+        "position": {"x": 1.0, "y": -2.0, "z": -3.0},
+    }
+
+
+def test_edge_runner_advertises_the_position_stream():
+    machine = MiniQubot(controller=FakeController())
+    client = EdgeNatsClient(servers=["nats://127.0.0.1:4222"], machine_id="miniqubot")
+    runner = EdgeRunner(nats_client=client, machine_driver=machine)
+
+    assert client.sdk_version == "0.0.18"
+    assert runner.telemetry_handler is None
+    assert [(name, spec.interval) for name, _, spec in runner.tlm_streams] == [("pos", 3.0)]
+    assert client.description == (
+        "Three-axis empty-head Qubot on a GRBL serial controller."
+    )
+    assert client.state_handler() == {"homed": False, "position": None}
+    assert "telemetry_handler" not in (
+        Path(__file__).resolve().parents[2] / "miniqubot-edge" / "main.py"
+    ).read_text()
+
+
+def test_edge_package_requires_sdk_0_0_18_without_psutil():
+    text = (Path(__file__).resolve().parents[2] / "miniqubot-edge" / "pyproject.toml").read_text()
+    assert "puda>=0.0.18" in text
+    assert "psutil" not in text
 
 
 def test_move_rejects_alarm_and_non_finite_values_before_motion():
