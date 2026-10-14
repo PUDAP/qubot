@@ -7,19 +7,23 @@ This class integrates:
 - SatoriusController: Handles liquid handling operations
 """
 
+import asyncio
 import logging
 import time
 from typing import Optional, Dict, Tuple, Union
 from qubot_drivers.move import GrblHALController, Deck
 from qubot_drivers import Position
 from qubot_drivers.satorius import SatoriusController
+from puda import command, machine_state, safety, tlm_stream
 
 logger = logging.getLogger(__name__)
 
 class PipQuBotV3:
     """
-    PipQuBotV3 machine class integrating motion control, deck management, and liquid handling.
-    
+    PipQuBotV3 is a gantry-mounted pipetting robot that handles liquid in labware on an 8-slot deck.
+
+    It integrates motion control, deck management, and liquid handling.
+
     The deck has 8 slots arranged in a 2x4 grid (A1-D2).
     Each slot's origin location is stored for absolute movement calculation.
     """
@@ -92,6 +96,19 @@ class PipQuBotV3:
             satorius_port,
         )
         
+    ### State ###
+    @machine_state
+    def snapshot(self) -> Dict[str, Dict]:
+        """Deck layout merged into MACHINE_STATE updates."""
+        return {"deck": self.deck.to_dict()}
+
+    ### Telemetry streams ###
+    @tlm_stream(interval=3.0, name="pos")
+    def position_stream(self) -> Dict[str, Union[Dict[str, float], int]]:
+        """Current position of the qubot gantry and pipette."""
+        # Runs in a worker thread with no event loop, so asyncio.run is safe here.
+        return asyncio.run(self.get_position())
+
     def startup(self):
         """
         Start up the machine by connecting all controllers and initializing subsystems.
@@ -115,6 +132,12 @@ class PipQuBotV3:
         time.sleep(3)  # need to wait for the pipette to initialize
         logger.info("Machine startup complete - ready for operations")
     
+    @command
+    @safety(
+        summary='Homes the gantry into its limit switches and re-initializes the pipette; the gantry can collide.',
+        hazards=['collision', 'lost-steps'],
+        requires='Deck is clear and the motor-power cutoff is reachable.',
+    )
     def home(self):
         """
         Home the qubot gantry to establish a known position.
@@ -154,6 +177,7 @@ class PipQuBotV3:
             "pipette": satorius_position,
         }
     
+    @command
     def get_deck(self):
         """
         Get the current deck layout.
@@ -166,6 +190,7 @@ class PipQuBotV3:
         """
         return self.deck.to_dict()
         
+    @command
     def load_labware(self, deck_slot: str, labware_name: str):
         """
         Load a labware object into a deck slot.
@@ -181,6 +206,7 @@ class PipQuBotV3:
         self.deck.load_labware(slot=deck_slot, labware_name=labware_name)
         logger.debug("Labware '%s' loaded into deck slot '%s'", labware_name, deck_slot)
 
+    @command
     def remove_labware(self, deck_slot: str):
         """
         Remove labware from a deck slot.
@@ -194,6 +220,7 @@ class PipQuBotV3:
         self.deck.empty_slot(slot=deck_slot)
         logger.debug("Deck slot '%s' emptied", deck_slot)
         
+    @command
     def load_deck(self, layout: Dict[str, str]):
         """
         Load multiple labware into the deck at once.
@@ -214,6 +241,12 @@ class PipQuBotV3:
         logger.info("Deck layout loaded successfully")
         
     ### Pipette operations ###
+    @command
+    @safety(
+        summary='Moves down onto a tiprack well to pick up a tip.',
+        hazards=['collision'],
+        requires='Gantry is homed and a tiprack is loaded in the slot.',
+    )
     def attach_tip(self, deck_slot: str, well_name: str):
         """
         Attach a tip from a deck slot and well.
@@ -252,6 +285,12 @@ class PipQuBotV3:
         self.qubot.home(axis="Z")
         logger.debug("Z axis homed after tip attachment")
         
+    @command
+    @safety(
+        summary='Moves to a well and ejects the attached tip.',
+        hazards=['collision', 'dropped tip'],
+        requires='A tip is attached and the target is a safe disposal location.',
+    )
     def drop_tip(self, *, deck_slot: str, well_name: str, height_from_bottom: float = 0.0):
         """
         Drop a tip into a deck slot.
@@ -287,6 +326,12 @@ class PipQuBotV3:
         self.pipette.set_tip_attached(attached=False)
         logger.info("Tip dropped successfully")
         
+    @command
+    @safety(
+        summary='Lowers the tip into a well and draws liquid.',
+        hazards=['collision', 'liquid handling'],
+        requires='A tip is attached and the labware is loaded.',
+    )
     def aspirate_from(self, *, deck_slot: str, well_name: str, amount: int, height_from_bottom: float = 0.0):
         """
         Aspirate a volume of liquid from a deck slot.
@@ -325,6 +370,12 @@ class PipQuBotV3:
         time.sleep(5)
         logger.info("Aspiration completed: %d µL from deck slot '%s', well '%s'", amount, deck_slot, well_name)
         
+    @command
+    @safety(
+        summary='Lowers the tip into a well and dispenses liquid.',
+        hazards=['collision', 'liquid handling'],
+        requires='A tip is attached and the labware is loaded.',
+    )
     def dispense_to(self, *, deck_slot: str, well_name: str, amount: int, height_from_bottom: float = 0.0):
         """
         Dispense a volume of liquid to a deck slot.
@@ -363,6 +414,11 @@ class PipQuBotV3:
         time.sleep(5)
         logger.info("Dispense completed: %d µL to deck slot '%s', well '%s'", amount, deck_slot, well_name)
         
+    @command
+    @safety(
+        summary='Blows out the pipette.',
+        hazards=['liquid spray'],
+    )
     def blowout(self, *, return_position: Optional[int] = None):
         """
         Blow out the pipette.
@@ -434,18 +490,21 @@ class PipQuBotV3:
     
     ### Control (immediate commands) ###
     
+    @command
     def pause(self):
         """
         Pause the execution of queued commands.
         """
         print("Pausing machine")
     
+    @command
     def resume(self):
         """
         Resume the execution of queued commands.
         """
         print("Resuming machine")
 
+    @command
     def cancel(self):
         """
         Cancel the execution of queued commands.

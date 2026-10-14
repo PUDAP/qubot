@@ -12,13 +12,13 @@ from typing import Any, Dict, Optional, Union
 from qubot_drivers.move.grbl_ws import GrblWSController
 from qubot_drivers.position import Position
 from qubot_drivers.satorius import SatoriusController
-from puda import command, tlm_stream
+from puda import command, safety, tlm_stream
 
 logger = logging.getLogger(__name__)
 
 
 class Pipette:
-    """Pipette machine class integrating motion control and liquid handling."""
+    """Pescador pipetting robot that moves a pipette over the deck and handles liquid, controlled over WebSocket and serial."""
 
     def __init__(
         self,
@@ -75,6 +75,11 @@ class Pipette:
         logger.info("Machine startup complete - ready for operations")
 
     @command
+    @safety(
+        summary='Homes the gantry into its limit switches and re-initializes the pipette; the gantry can collide.',
+        hazards=['collision', 'lost-steps'],
+        requires='Deck is clear and the motor-power cutoff is reachable.',
+    )
     def home(self):
         """Home the qubot gantry and reinitialize the pipette."""
         logger.info("Homing qubot gantry...")
@@ -91,6 +96,11 @@ class Pipette:
         logger.info("Machine shutdown complete")
 
     @command
+    @safety(
+        summary='Moves the gantry directly to an absolute position, bypassing the safe-Z path.',
+        hazards=['collision'],
+        requires='Gantry is homed and the path is clear.',
+    )
     def move_to(self, x: float, y: float, z: float):
         """
         Move the gantry directly to an absolute position.
@@ -106,6 +116,11 @@ class Pipette:
         self.qubot.g0(Position(x=x, y=y, z=z))
 
     @command
+    @safety(
+        summary='Moves the gantry to an absolute position via safe Z, then XY, then Z.',
+        hazards=['collision'],
+        requires='Gantry is homed and the target is within reach.',
+    )
     def safe_move_to(self, x: float, y: float, z: float, z_safe: float = -10):
         """
         Move to an absolute position while keeping the tip clear of obstacles.
@@ -143,6 +158,11 @@ class Pipette:
     ### Pipette operations ###
 
     @command
+    @safety(
+        summary='Moves down onto a tiprack position to pick up a tip.',
+        hazards=['collision'],
+        requires='Gantry is homed and a tip is at the target position.',
+    )
     def attach_tip(
         self,
         x: float,
@@ -186,6 +206,11 @@ class Pipette:
         return {"skipped": False}
 
     @command
+    @safety(
+        summary='Ejects the attached tip at the current position.',
+        hazards=['dropped tip'],
+        requires='A tip is attached and the gantry is above a safe disposal location.',
+    )
     def drop_tip(self) -> Dict[str, Any]:
         """
         Drop the attached tip.
@@ -205,6 +230,11 @@ class Pipette:
         return {}
 
     @command
+    @safety(
+        summary='Draws liquid at the current position.',
+        hazards=['liquid handling'],
+        requires='A tip is attached and positioned in the liquid.',
+    )
     def aspirate_from(self, amount: int) -> Dict[str, int]:
         """
         Aspirate a volume of liquid at the current position.
@@ -226,6 +256,11 @@ class Pipette:
         return {"amount": amount}
 
     @command
+    @safety(
+        summary='Dispenses liquid at the current position.',
+        hazards=['liquid handling'],
+        requires='A tip is attached and positioned over the target.',
+    )
     def dispense_to(self, amount: int) -> Dict[str, int]:
         """
         Dispense a volume of liquid at the current position.
@@ -247,6 +282,10 @@ class Pipette:
         return {"amount": amount}
 
     @command
+    @safety(
+        summary='Blows out the pipette.',
+        hazards=['liquid spray'],
+    )
     def blowout(self) -> Dict[str, Any]:
         """Blow out the pipette."""
         logger.info("Blowing out pipette")

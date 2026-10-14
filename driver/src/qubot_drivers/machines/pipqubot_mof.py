@@ -7,20 +7,23 @@ This class integrates:
 - SatoriusController: Handles liquid handling operations
 """
 
+import asyncio
 import logging
 import time
 from typing import Optional, Dict, Tuple, Union
 from qubot_drivers.move import GrblHALController, Deck
 from qubot_drivers import Position
 from qubot_drivers.satorius import SatoriusController
-from puda import command, machine_state
+from puda import command, machine_state, safety, tlm_stream
 
 logger = logging.getLogger(__name__)
 
 class PipQuBotMOF:
     """
-    MOF PipQuBot machine class integrating motion control, deck management, and liquid handling.
-    
+    MOF PipQuBot is a gantry-mounted pipetting robot that handles liquid in labware on an 8-slot deck.
+
+    It integrates motion control, deck management, and liquid handling.
+
     The deck has 8 slots arranged in a 2x4 grid (A1-D2).
     Each slot's origin location is stored for absolute movement calculation.
     """
@@ -126,6 +129,11 @@ class PipQuBotMOF:
         logger.info("Machine startup complete - ready for operations")
     
     @command
+    @safety(
+        summary='Homes the gantry into its limit switches and re-initializes the pipette; the gantry can collide.',
+        hazards=['collision', 'lost-steps'],
+        requires='Deck is clear and the motor-power cutoff is reachable.',
+    )
     def home(self):
         """
         Home the qubot gantry to establish a known position.
@@ -151,6 +159,13 @@ class PipQuBotMOF:
         self.pipette.disconnect()
         logger.info("Machine shutdown complete")
     
+    ### Telemetry streams ###
+    @tlm_stream(interval=3.0, name="pos")
+    def position_stream(self) -> Dict[str, Union[Dict[str, float], int]]:
+        """Current position of the qubot gantry and pipette."""
+        # Runs in a worker thread with no event loop, so asyncio.run is safe here.
+        return asyncio.run(self.get_position())
+
     ### Queue (public commands) ###
     async def get_position(self) -> Dict[str, Union[Dict[str, float], int]]:
         """
@@ -229,6 +244,11 @@ class PipQuBotMOF:
         logger.info("Deck layout loaded successfully")
 
     @command
+    @safety(
+        summary='Moves the gantry to the top of a labware well.',
+        hazards=['collision'],
+        requires='Gantry is homed and labware is loaded in the slot.',
+    )
     def move_to_well(self, *, deck_slot: str, well_name: str) -> Dict[str, float]:
         """Move to the top of a loaded labware well without liquid handling."""
         logger.info("Moving to deck slot '%s', well '%s'", deck_slot, well_name)
@@ -238,6 +258,11 @@ class PipQuBotMOF:
         return pos.to_dict()
 
     @command
+    @safety(
+        summary='Moves only the Z axis by a signed distance.',
+        hazards=['collision'],
+        requires='Gantry is homed and nothing is in the Z path.',
+    )
     def move_z_relative(self, *, distance_mm: float) -> Dict[str, float]:
         """Move only the Z axis by a signed relative distance in millimetres."""
         logger.info("Moving Z axis relative by %s mm", distance_mm)
@@ -247,6 +272,11 @@ class PipQuBotMOF:
         
     ### Pipette operations ###
     @command
+    @safety(
+        summary='Moves down onto a tiprack well to pick up a tip.',
+        hazards=['collision'],
+        requires='Gantry is homed and a tiprack is loaded in the slot.',
+    )
     def attach_tip(self, deck_slot: str, well_name: str):
         """
         Attach a tip from a deck slot and well.
@@ -286,6 +316,11 @@ class PipQuBotMOF:
         logger.debug("Z axis homed after tip attachment")
         
     @command
+    @safety(
+        summary='Moves to a well and ejects the attached tip.',
+        hazards=['collision', 'dropped tip'],
+        requires='A tip is attached and the target is a safe disposal location.',
+    )
     def drop_tip(self, *, deck_slot: str, well_name: str, height_from_bottom: float = 0.0):
         """
         Drop a tip into a deck slot.
@@ -322,6 +357,11 @@ class PipQuBotMOF:
         logger.info("Tip dropped successfully")
         
     @command
+    @safety(
+        summary='Lowers the tip into a well and draws liquid.',
+        hazards=['collision', 'liquid handling'],
+        requires='A tip is attached and the labware is loaded.',
+    )
     def aspirate_from(self, *, deck_slot: str, well_name: str, amount: int, height_from_bottom: float = 0.0):
         """
         Aspirate a volume of liquid from a deck slot.
@@ -361,6 +401,11 @@ class PipQuBotMOF:
         logger.info("Aspiration completed: %d µL from deck slot '%s', well '%s'", amount, deck_slot, well_name)
         
     @command
+    @safety(
+        summary='Lowers the tip into a well and dispenses liquid.',
+        hazards=['collision', 'liquid handling'],
+        requires='A tip is attached and the labware is loaded.',
+    )
     def dispense_to(self, *, deck_slot: str, well_name: str, amount: int, height_from_bottom: float = 0.0):
         """
         Dispense a volume of liquid to a deck slot.
@@ -400,6 +445,10 @@ class PipQuBotMOF:
         logger.info("Dispense completed: %d µL to deck slot '%s', well '%s'", amount, deck_slot, well_name)
         
     @command
+    @safety(
+        summary='Blows out the pipette.',
+        hazards=['liquid spray'],
+    )
     def blowout(self, *, return_position: Optional[int] = None):
         """
         Blow out the pipette.

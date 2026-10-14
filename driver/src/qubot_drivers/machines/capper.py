@@ -11,14 +11,14 @@ from typing import Any, Dict, Optional
 
 from qubot_drivers.move.reprap_http import RepRapHTTPController
 from qubot_drivers.position import Position
-from puda import command, tlm_stream
+from puda import command, safety, tlm_stream
 
 logger = logging.getLogger(__name__)
 
 
 class Capper:
     """
-    Capper machine class integrating motion control.
+    Tube capper that screws caps onto and off of tubes using a gantry with two clamps.
     """
 
     TUBE_X = 32.5
@@ -79,11 +79,21 @@ class Capper:
         logger.info("Machine shutdown complete")
 
     @command
+    @safety(
+        summary='Moves the gantry directly to an absolute position, bypassing the safe-Z path.',
+        hazards=['collision'],
+        requires='Gantry is homed and the path is clear.',
+    )
     def move_to(self, x: float, y: float, z: float):
         """Move directly to an absolute position."""
         self.qubot.g0(Position(x=x, y=y, z=z))
 
     @command
+    @safety(
+        summary='Moves the gantry to an absolute position via safe Z, then XY, then Z.',
+        hazards=['collision'],
+        requires='Gantry is homed and the target is within reach.',
+    )
     def safe_move_to(self, x: float, y: float, z: float):
         """Move to an absolute position via safe Z, then XY, then Z."""
         self.qubot.g0(Position(z=self.Z_SAFE))
@@ -96,6 +106,10 @@ class Capper:
         self.qubot.set_pin(0, 0)
 
     @command
+    @safety(
+        summary='Engages the bottom clamp.',
+        hazards=['pinch point'],
+    )
     def clamp_bottom(self):
         """Engage the bottom clamp."""
         self.qubot.set_pin(0, 1)
@@ -106,11 +120,20 @@ class Capper:
         self.qubot.set_pin(1, 0)
 
     @command
+    @safety(
+        summary='Engages the top clamp.',
+        hazards=['pinch point'],
+    )
     def clamp_top(self):
         """Engage the top clamp."""
         self.qubot.set_pin(1, 1)
 
     @command
+    @safety(
+        summary='Homes all axes and releases both clamps; the gantry can collide.',
+        hazards=['collision', 'held tube or cap released'],
+        requires='Deck is clear.',
+    )
     def home(self):
         """Home all axes and release both clamps."""
         self.qubot.home()
@@ -123,6 +146,11 @@ class Capper:
         self.safe_move_to(10, -10, self.Z_SAFE)
 
     @command
+    @safety(
+        summary='Unscrews the cap from the tube at the capping station.',
+        hazards=['collision', 'pinch point'],
+        requires='A tube is seated in the capping station and the gantry is homed.',
+    )
     def decap(self):
         """Unscrew the cap from the tube at the capping station."""
         self.release_top()
@@ -138,6 +166,11 @@ class Capper:
         self.qubot.g0(Position(z=self.Z_DECAP_RETRACT))
 
     @command
+    @safety(
+        summary='Moves to a position and releases the held cap.',
+        hazards=['collision', 'dropped cap'],
+        requires='A cap is held and the target is clear.',
+    )
     def place_cap_at(self, x: float, y: float, z: float):
         """Place the held cap at the specified position."""
         self.safe_move_to(x, y, z)
@@ -145,6 +178,11 @@ class Capper:
         time.sleep(3)
 
     @command
+    @safety(
+        summary='Moves to a position and clamps a cap.',
+        hazards=['collision', 'pinch point'],
+        requires='Gantry is homed and the target is clear.',
+    )
     def pick_cap_from(self, x: float, y: float, z: float):
         """Pick up a cap from the specified position."""
         self.safe_move_to(x, y, z)
@@ -153,6 +191,11 @@ class Capper:
         self.qubot.g0(Position(z=self.Z_SAFE))
 
     @command
+    @safety(
+        summary='Screws a cap onto the tube at the capping station.',
+        hazards=['collision', 'pinch point'],
+        requires='A tube is seated in the capping station and a cap is held.',
+    )
     def cap(self):
         """Screw a cap onto the tube at the capping station."""
         self.clamp_bottom()

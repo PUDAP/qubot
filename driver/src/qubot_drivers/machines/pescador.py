@@ -10,13 +10,14 @@ from typing import Any, Dict, Optional
 
 from qubot_drivers.move.grbl_ws import GrblWSController
 from qubot_drivers.position import Position
+from puda import command, safety, tlm_stream
 
 logger = logging.getLogger(__name__)
 
 
 class Pescador:
     """
-    Pescador pipette machine class integrating motion control.
+    Pescador is a WebSocket-controlled gantry that moves a pipette head over the deck.
     """
 
     Z_SAFE = -10
@@ -69,24 +70,45 @@ class Pescador:
         self.qubot.disconnect()
         logger.info("Machine shutdown complete")
 
+    @command
+    @safety(
+        summary='Moves the gantry directly to an absolute position, bypassing the safe-Z path.',
+        hazards=['collision'],
+        requires='Gantry is homed and the path is clear.',
+    )
     def move_to(self, x: float, y: float, z: float):
         """Move directly to an absolute position."""
         self.qubot.g0(Position(x=x, y=y, z=z))
 
+    @command
+    @safety(
+        summary='Moves the gantry to an absolute position via safe Z, then XY, then Z.',
+        hazards=['collision'],
+        requires='Gantry is homed and the target is within reach.',
+    )
     def safe_move_to(self, x: float, y: float, z: float):
         """Move to an absolute position via safe Z, then XY, then Z."""
         self.qubot.g0(Position(z=self.Z_SAFE))
         self.qubot.g0(Position(x=x, y=y))
         self.qubot.g0(Position(z=z))
 
+    @command
+    @safety(
+        summary='Homes all axes into their limit switches; the gantry can collide.',
+        hazards=['collision', 'lost-steps'],
+        requires='Deck is clear and the motor-power cutoff is reachable.',
+    )
     def home(self):
         """Home all axes."""
         self.qubot.home()
 
+    @command
     def clear_deck(self):
         """Move to a clear position on the deck."""
         self.safe_move_to(10, -10, self.Z_SAFE)
 
+    @command
+    @tlm_stream(interval=3.0, name="pos")
     def get_position(self) -> Dict[str, float]:
         """
         Get the current gantry position.
@@ -96,6 +118,7 @@ class Pescador:
         """
         return self.qubot.get_position().to_dict()
 
+    @command
     def get_status(self) -> Dict[str, Any]:
         """
         Get the current GRBL firmware status.
@@ -107,14 +130,17 @@ class Pescador:
 
     ### Control (immediate commands) ###
 
+    @command
     def pause(self):
         """Pause the execution of queued commands."""
         print("Pausing machine")
 
+    @command
     def resume(self):
         """Resume the execution of queued commands."""
         print("Resuming machine")
 
+    @command
     def cancel(self):
         """Cancel the execution of queued commands."""
         print("Cancelling machine")
