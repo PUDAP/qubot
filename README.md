@@ -7,6 +7,7 @@ Monorepo for machine edge services and shared drivers.
 - `first-edge` — First machine edge service (serial ports for qubot and satorius)
 - `capper-edge` — Capper machine edge service (HTTP to qubot)
 - `pipqubot-mof-edge` — MOF PipQuBot edge service (serial ports for the GRBL gantry and Sartorius pipette)
+- `pipqubot-xl-edge` — PipQuBot XL edge service (serial gantry, Sartorius pipette, and an A-axis capper head)
 - `miniqubot-edge` — MiniQubot edge service (one GRBL serial gantry, empty head; startup homes)
 - `pescador-pipqubot-edge` — Pescador PipQuBot edge service (WebSocket gantry and Sartorius pipette)
 - `driver` — Shared machine drivers
@@ -21,6 +22,7 @@ Each edge's `main.py` wraps the matching class in `qubot_drivers.machines`. Publ
   - `/dev/ttyACM0` (qubot)
   - `/dev/ttyUSB0` (satorius)
 - For `pipqubot-mof-edge`, the GRBL gantry and Sartorius pipette serial devices available
+- For `pipqubot-xl-edge`, the RepRap gantry and Sartorius pipette serial devices available
 
 ## Environment Setup
 
@@ -69,6 +71,29 @@ Edit `pipqubot-mof-edge/.env` and configure:
 - `SATORIUS_PORT` (Sartorius pipette serial port)
 
 The Compose configuration maps stable `/dev/serial/by-id/...` device paths to the container paths configured by `QUBOT_PORT` and `SATORIUS_PORT`. Update `pipqubot-mof-edge/compose.yml` if your devices have different IDs.
+
+### pipqubot-xl-edge
+
+From repo root:
+
+```bash
+cp pipqubot-xl-edge/.env.example pipqubot-xl-edge/.env
+```
+
+On Windows PowerShell:
+
+```powershell
+Copy-Item pipqubot-xl-edge/.env.example pipqubot-xl-edge/.env
+```
+
+Edit `pipqubot-xl-edge/.env` and configure:
+
+- `MACHINE_ID` (defaults to `pipqubot-xl`)
+- `NATS_SERVERS`
+- `QUBOT_PORT` (RepRap gantry serial port)
+- `SATORIUS_PORT` (Sartorius pipette serial port)
+
+Windows serial ports can be specified as `COM3`, `COM4`, and so on. Linux deployments should prefer stable `/dev/serial/by-id/...` paths.
 
 ### pescador-pipqubot-edge
 
@@ -151,6 +176,28 @@ docker compose -f pipqubot-mof-edge/compose.yml down
 
 Starting this service connects both controllers, homes the gantry, and initializes the pipette.
 
+### pipqubot-xl-edge
+
+Build and start:
+
+```bash
+docker compose -f pipqubot-xl-edge/compose.yml up -d --build
+```
+
+View logs:
+
+```bash
+docker compose -f pipqubot-xl-edge/compose.yml logs -f
+```
+
+Stop:
+
+```bash
+docker compose -f pipqubot-xl-edge/compose.yml down
+```
+
+Starting this service connects both serial controllers, homes the gantry, and initializes the pipette. The capper head uses the A axis for vertical travel.
+
 ### pescador-pipqubot-edge
 
 Build and start:
@@ -180,7 +227,15 @@ uv sync --all-packages
 uv run --package first-edge python first-edge/main.py
 uv run --package capper-edge python capper-edge/main.py
 uv run --package pipqubot-mof-edge python pipqubot-mof-edge/main.py
+uv run --package pipqubot-xl-edge python pipqubot-xl-edge/main.py
 uv run --package pescador-pipqubot-edge python pescador-pipqubot-edge/main.py
+```
+
+On Windows, you can also start the XL edge from its directory:
+
+```powershell
+cd pipqubot-xl-edge
+.\start_edge.bat
 ```
 
 ## Build and Push Image (GHCR)
@@ -197,6 +252,7 @@ Build:
 docker compose -f first-edge/compose.yml build
 docker compose -f capper-edge/compose.yml build
 docker compose -f pipqubot-mof-edge/compose.yml build
+docker compose -f pipqubot-xl-edge/compose.yml build
 docker compose -f pescador-pipqubot-edge/compose.yml build
 ```
 
@@ -206,6 +262,7 @@ Push:
 docker push ghcr.io/PUDAP/first-edge:latest
 docker push ghcr.io/PUDAP/capper-edge:latest
 docker push ghcr.io/pudap/pipqubot-mof-edge:latest
+docker push ghcr.io/pudap/pipqubot-xl-edge:latest
 docker push ghcr.io/pudap/pescador-pipqubot-edge:latest
 ```
 
@@ -215,12 +272,13 @@ Or with Compose:
 docker compose -f first-edge/compose.yml push
 docker compose -f capper-edge/compose.yml push
 docker compose -f pipqubot-mof-edge/compose.yml push
+docker compose -f pipqubot-xl-edge/compose.yml push
 docker compose -f pescador-pipqubot-edge/compose.yml push
 ```
 
 ## Notes
 
 - Docker build context is workspace root (`..` in each `compose.yml`).
-- Dockerfile paths are `first-edge/Dockerfile`, `capper-edge/Dockerfile`, and `pipqubot-mof-edge/Dockerfile`.
-- If serial access fails on `first-edge` or `pipqubot-mof-edge`, add your user to `dialout`:
+- Each Compose file references the Dockerfile in its edge package directory.
+- If serial access fails on `first-edge`, `pipqubot-mof-edge`, or `pipqubot-xl-edge`, add your user to `dialout`:
   - `sudo usermod -aG dialout $USER`
