@@ -1,9 +1,36 @@
 import logging
+import time
 
 import pytest
 
 from qubot_drivers.satorius import SatoriusController, SatoriusDeviceError
 from qubot_drivers.serialcontroller import SerialController
+
+
+class FakeSerialResponse:
+    """Serial response delivered in one or more chunks."""
+
+    is_open = True
+
+    def __init__(self, *chunks: bytes):
+        self._chunks = list(chunks)
+
+    @property
+    def in_waiting(self) -> int:
+        return len(self._chunks[0]) if self._chunks else 0
+
+    def read(self, _size: int) -> bytes:
+        return self._chunks.pop(0)
+
+
+def frame(payload: bytes, *, lrc: int | None = None) -> bytes:
+    checksum = lrc
+    if checksum is None:
+        checksum = 0
+        for byte in payload:
+            checksum ^= byte
+        checksum |= 0x80
+    return b"\t" + payload + bytes([checksum]) + b"\r"
 
 
 def make_controller() -> SatoriusController:
@@ -76,3 +103,23 @@ def test_partial_dispense_uses_relative_outward_move(
 
     assert commands == [("RO", "80")]
     assert controller._volume == 60
+
+
+def test_unterminated_position_reply_finishes_without_warning(caplog) -> None:
+    controller = SatoriusController(port_name="fake", timeout=1)
+    controller._serial = FakeSerialResponse(b"1dp443")
+
+    started = time.monotonic()
+    with caplog.at_level(logging.WARNING, logger="qubot_drivers.satorius"):
+        response = controller._read_response(timeout=1)
+
+    assert response == "1dp443"
+    assert time.monotonic() - started < 0.5
+    assert "unexpected response" not in caplog.text
+
+
+def test_get_position_parses_sartorius_dp_reply(monkeypatch: pytest.MonkeyPatch) -> None:
+    controller = make_controller()
+    monkeypatch.setattr(controller, "execute", lambda command: "1dp443")
+
+    assert controller.get_position() == 443

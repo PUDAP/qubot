@@ -8,7 +8,6 @@ services:
     restart: unless-stopped
     network_mode: host
     devices:
-      - ${QUBOT_PORT}:${QUBOT_PORT}
       - ${SATORIUS_PORT}:${SATORIUS_PORT}
     volumes:
       - ./.env:/app/pipqubot-xl-edge/.env:ro

@@ -134,6 +134,14 @@ class SerialController(ABC):
         """Checks if the serial port is currently open."""
         return self._serial is not None and self._serial.is_open
 
+    def _is_complete_unterminated_response(self, response: bytes) -> bool:
+        """Return whether a device-specific frame is complete without a terminator."""
+        return False
+
+    def _is_expected_response(self, response: str) -> bool:
+        """Return whether a device-specific decoded response is valid."""
+        return False
+
     def _send_command(self, command: str) -> None:
         """
         Sends a command to the device.
@@ -196,6 +204,8 @@ class SerialController(ABC):
                 if b"\xba\r" in response:
                     break
             else:
+                if response and self._is_complete_unterminated_response(response):
+                    break
                 time.sleep(0.1)
 
         # Timeout reached - check what we got
@@ -211,6 +221,8 @@ class SerialController(ABC):
         elif "err" in decoded_response.lower():
             self._logger.error("<- Received error: %r", decoded_response)
         elif "º" in decoded_response: # for satorius (since res not returning ok or err)
+            self._logger.debug("<- Received response: %r", decoded_response)
+        elif self._is_expected_response(decoded_response):
             self._logger.debug("<- Received response: %r", decoded_response)
         else:
             self._logger.warning(

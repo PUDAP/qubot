@@ -40,6 +40,14 @@ class SatoriusController(SerialController):
     ERROR_RESPONSE = "err"
     MIN_SPEED = 1
     MAX_SPEED = 6
+    RESPONSE_PATTERN_BYTES = re.compile(
+        rb"^\x01?1(?:ok|er[1-4]|[a-z]{2}-?\d+)$",
+        re.IGNORECASE,
+    )
+    RESPONSE_PATTERN_TEXT = re.compile(
+        r"^\x01?1(?:ok|er[1-4]|[a-z]{2}-?\d+)$",
+        re.IGNORECASE,
+    )
 
     def __init__(
         self,
@@ -59,6 +67,12 @@ class SatoriusController(SerialController):
         self._tip_attached: bool = False
         self._volume: int = 0
         self._microliter_per_step = microliter_per_step
+
+    def _is_complete_unterminated_response(self, response: bytes) -> bool:
+        return self.RESPONSE_PATTERN_BYTES.fullmatch(response) is not None
+
+    def _is_expected_response(self, response: str) -> bool:
+        return self.RESPONSE_PATTERN_TEXT.fullmatch(response) is not None
 
     def _build_command(self, command: str, value: Optional[str] = None) -> str:
         return (
@@ -252,8 +266,14 @@ class SatoriusController(SerialController):
     def get_position(self) -> int:
         self._logger.info("** Querying Position (DP) **")
         response = self.execute(command="DP")
-        self._logger.info("** Position: %s steps **\n", response)
-        return response
+        match = re.fullmatch(r"\x01?1dp(-?\d+)", response, re.IGNORECASE)
+        if match is None:
+            raise SatoriusDeviceError(
+                f"Invalid response format for position query: {response}"
+            )
+        position = int(match.group(1))
+        self._logger.info("** Position: %s steps **\n", position)
+        return position
 
     def get_liquid_level(self) -> int:
         self._logger.info("** Querying Liquid Level (DN) **")

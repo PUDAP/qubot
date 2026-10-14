@@ -8,11 +8,13 @@ This class demonstrates the integration of:
 """
 
 import asyncio
+import inspect
 import logging
 import time
 from typing import Any, Optional, Dict, Tuple, Union
 from puda import command, machine_state, safety, tlm_stream
 from qubot_drivers.move import RepRapController, Deck
+from qubot_drivers.move.reprap_http import RepRapHTTPController
 from qubot_drivers import Position
 from qubot_drivers.satorius import SatoriusController
 
@@ -64,30 +66,35 @@ class PipQuBotXL:
         self,
         qubot_port: Optional[str] = None,
         satorius_port: Optional[str] = None,
+        qubot_ip: Optional[str] = None,
         axis_limits: Optional[Dict[str, Tuple[float, float]]] = None,
     ):
         """
         Initialize the PipQuBot XL machine.
 
-        qubot_port and satorius_port must both be specified; otherwise ValueError is raised.
+        Either qubot_port or qubot_ip, plus satorius_port, must be specified.
 
         Args:
             qubot_port: Serial port for RepRapController (e.g., '/dev/ttyACM0').
             satorius_port: Serial port for SatoriusController (e.g., '/dev/ttyUSB0').
+            qubot_ip: Hostname or IP for RepRapHTTPController.
             axis_limits: Dictionary mapping axis names to (min, max) limits. Defaults to DEFAULT_AXIS_LIMITS.
 
         Raises:
             ValueError: If qubot_port or satorius_port is not specified.
         """
-        if qubot_port is None:
-            raise ValueError("qubot_port is required")
+        if (qubot_port is None) == (qubot_ip is None):
+            raise ValueError("exactly one of qubot_port or qubot_ip is required")
         if satorius_port is None:
             raise ValueError("satorius_port is required")
 
         # Initialize deck
         self.deck = Deck(rows=4, cols=4)
 
-        self.qubot = RepRapController(port_name=qubot_port)
+        if qubot_ip is not None:
+            self.qubot = RepRapHTTPController(host=qubot_ip)
+        else:
+            self.qubot = RepRapController(port_name=qubot_port)
         limits = axis_limits or self.DEFAULT_AXIS_LIMITS
         for axis, (min_val, max_val) in limits.items():
             self.qubot.set_axis_limits(axis, min_val, max_val)
@@ -95,8 +102,8 @@ class PipQuBotXL:
         self.pipette = SatoriusController(port_name=satorius_port)
 
         logger.info(
-            "PipQuBot XL machine initialized: qubot_port=%s, satorius_port=%s",
-            qubot_port,
+            "PipQuBot XL machine initialized: qubot=%s, satorius_port=%s",
+            qubot_ip or qubot_port,
             satorius_port,
         )
 
@@ -113,7 +120,12 @@ class PipQuBotXL:
         # Runs in a worker thread with no event loop, so asyncio.run is safe here.
         return asyncio.run(self.get_position())
 
-    def startup(self):
+    def startup(
+        self,
+        *,
+        home_gantry: bool = True,
+        initialize_pipette: bool = True,
+    ):
         """
         Start up the machine by connecting all controllers and initializing subsystems.
         
@@ -129,11 +141,17 @@ class PipQuBotXL:
         self.pipette.connect()
         logger.info("All controllers connected successfully")
 
-        logger.info("Homing gantry...")
-        self.qubot.home()
-        logger.info("Initializing pipette...")
-        self.pipette.initialize()
-        time.sleep(3)  # need to wait for the pipette to initialize
+        if home_gantry:
+            logger.info("Homing gantry...")
+            self.qubot.home()
+        else:
+            logger.info("Skipping gantry homing by configuration")
+        if initialize_pipette:
+            logger.info("Initializing pipette...")
+            self.pipette.initialize()
+            time.sleep(3)  # need to wait for the pipette to initialize
+        else:
+            logger.info("Skipping pipette initialization by configuration")
         logger.info("Machine startup complete - ready for operations")
     
     @command
@@ -170,8 +188,11 @@ class PipQuBotXL:
         Returns:
             Dictionary containing the current position of the machine and its components (qubot, pipette).
         """
+        qubot_position = self.qubot.get_position()
+        if inspect.isawaitable(qubot_position):
+            qubot_position = await qubot_position
         return {
-            "qubot": (await self.qubot.get_position()).to_dict(),
+            "qubot": qubot_position.to_dict(),
             "pipette": self.pipette.get_position(),
         }
     @command

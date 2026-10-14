@@ -119,6 +119,53 @@ class RepRapHTTPController:
     def g0(self, position: Position) -> dict:
         return self.execute_and_wait(self._g0_command(position))
 
+    def _validate_position(self, position: Position) -> None:
+        for axis in self.VALID_AXES:
+            key = axis.lower()
+            if position.has_axis(key):
+                self._axis_limits[axis].validate(position[key])
+
+    def _absolute_move_command(
+        self,
+        position: Position,
+        feed: Optional[int] = None,
+    ) -> str:
+        if feed is not None and feed <= 0:
+            raise ValueError("feed must be positive")
+        command = self._g0_command(position)
+        if feed is not None:
+            command += f"F{feed}"
+        return command
+
+    def move_absolute(
+        self,
+        position: Position,
+        feed: Optional[int] = None,
+    ) -> Position:
+        """Move specified axes to absolute coordinates and return measured position."""
+        self._validate_position(position)
+        self.set_absolute_mode()
+        self.execute_and_wait(self._absolute_move_command(position, feed))
+        return self.get_position()
+
+    def move_relative(
+        self,
+        position: Position,
+        feed: Optional[int] = None,
+    ) -> Position:
+        """Apply axis deltas as a bounded absolute move and return measured position."""
+        current = self.get_position()
+        target = Position()
+        for axis in self.VALID_AXES:
+            key = axis.lower()
+            if position.has_axis(key):
+                target[key] = current[key] + position[key]
+
+        self._validate_position(target)
+        self.set_absolute_mode()
+        self.execute_and_wait(self._absolute_move_command(target, feed))
+        return self.get_position()
+
     def set_pin(self, pin: int, state: int) -> dict:
         return self.execute(f"M42 P{pin} S{state}")
 

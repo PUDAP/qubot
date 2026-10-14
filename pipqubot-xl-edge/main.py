@@ -25,8 +25,10 @@ class Config(BaseSettings):
 
     machine_id: str
     nats_servers: str
-    qubot_port: str
+    qubot_ip: str
     satorius_port: str
+    home_gantry_on_startup: bool = True
+    initialize_pipette_on_startup: bool = True
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parent / ".env",
@@ -56,16 +58,25 @@ def load_config() -> Config:
         raise
 
 
+def build_driver(config: Config) -> PipQuBotXL:
+    """Create and connect the driver using explicit startup-motion gates."""
+    driver = PipQuBotXL(
+        qubot_ip=config.qubot_ip,
+        satorius_port=config.satorius_port,
+    )
+    driver.startup(
+        home_gantry=config.home_gantry_on_startup,
+        initialize_pipette=config.initialize_pipette_on_startup,
+    )
+    return driver
+
+
 async def main() -> None:
     """Initialize the PipQuBot XL and run its PUDA edge service."""
     config = load_config()
     logger.info("Initializing driver for %s", config.machine_id)
 
-    driver = PipQuBotXL(
-        qubot_port=config.qubot_port,
-        satorius_port=config.satorius_port,
-    )
-    driver.startup()
+    driver = build_driver(config)
 
     nats_client = EdgeNatsClient(
         servers=config.nats_server_list,
