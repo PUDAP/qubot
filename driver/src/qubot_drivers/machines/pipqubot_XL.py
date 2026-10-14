@@ -48,18 +48,22 @@ class PipQuBotXL:
     
     # Slot origins (the bottom left corner of each deck slot relative to the deck origin)
     SLOT_ORIGINS = {
-        "A1": Position(x=-2, y=-424),
-        "A2": Position(x=98, y=-424),
-        "A3": Position(x=198, y=-424),
-        "A4": Position(x=298, y=-424),
-        "B1": Position(x=-2, y=-274),
-        "B2": Position(x=98, y=-274),
-        "B3": Position(x=198, y=-274),
-        "B4": Position(x=298, y=-274),
-        "C1": Position(x=-2, y=-124),
-        "C2": Position(x=98, y=-124),
-        "C3": Position(x=198, y=-124),
-        "C4": Position(x=298, y=-124),
+        "A1": Position(x=-5.3, y=-470),
+        "A2": Position(x=94.7, y=-470),
+        "A3": Position(x=194.7, y=-470),
+        "A4": Position(x=294.7, y=-470),
+        "B1": Position(x=-5.3, y=-320),
+        "B2": Position(x=94.7, y=-320),
+        "B3": Position(x=194.7, y=-320),
+        "B4": Position(x=294.7, y=-320),
+        "C1": Position(x=-5.3, y=-170),
+        "C2": Position(x=94.7, y=-170),
+        "C3": Position(x=194.7, y=-170),
+        "C4": Position(x=294.7, y=-170),
+        "D1": Position(x=-5.3, y=-20),
+        "D2": Position(x=94.7, y=-20),
+        "D3": Position(x=194.7, y=-20),
+        "D4": Position(x=294.7, y=-20),
     }
     
     def __init__(
