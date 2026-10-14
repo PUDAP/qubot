@@ -1,0 +1,20 @@
+services:
+  pipqubot-xl:
+    build:
+      context: ..
+      dockerfile: pipqubot-xl-edge/Dockerfile
+    image: ghcr.io/pudap/pipqubot-xl-edge:latest
+    container_name: pipqubot-xl-edge
+    restart: unless-stopped
+    network_mode: host
+    devices:
+      - ${QUBOT_PORT}:${QUBOT_PORT}
+      - ${SATORIUS_PORT}:${SATORIUS_PORT}
+    volumes:
+      - ./.env:/app/pipqubot-xl-edge/.env:ro
+    healthcheck:
+      test: ["CMD", "uv", "run", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

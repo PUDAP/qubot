@@ -9,6 +9,7 @@ members = [
     "miniqubot-edge",
     "pescador-pipqubot-edge",
     "pipqubot-mof-edge",
+    "pipqubot-xl-edge",
     "qubot-drivers",
 ]
 
@@ -208,6 +209,23 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
+    { name = "qubot-drivers", editable = "driver" },
+]
+
+[[package]]
+name = "pipqubot-xl-edge"
+version = "0.1.0"
+source = { virtual = "pipqubot-xl-edge" }
+dependencies = [
+    { name = "puda" },
+    { name = "pydantic-settings" },
+    { name = "qubot-drivers" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "puda", specifier = ">=0.0.18" },
+    { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "qubot-drivers", editable = "driver" },
 ]
 
