@@ -5,6 +5,7 @@ This class integrates:
 - RepRapHTTPController: Handles motion control over HTTP (hardware-specific)
 """
 
+import asyncio
 import logging
 import time
 from typing import Any, Dict, Optional
@@ -219,7 +220,7 @@ class Capper:
         Returns:
             Dictionary of axis positions (e.g. x, y, z, a).
         """
-        return self.qubot.get_position().to_dict()
+        return asyncio.run(self.qubot.get_position()).to_dict()
 
     @command
     def get_status(self) -> Dict[str, Any]:
