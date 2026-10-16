@@ -48,22 +48,22 @@ class PipQuBotXL:
     
     # Slot origins (the bottom left corner of each deck slot relative to the deck origin)
     SLOT_ORIGINS = {
-        "A1": Position(x=4.3, y=-468.3),
-        "A2": Position(x=104.3, y=-468.3),
-        "A3": Position(x=204.3, y=-468.3),
-        "A4": Position(x=304.3, y=-468.3),
-        "B1": Position(x=-4.3, y=-318.3),
-        "B2": Position(x=104.3, y=-318.3),
-        "B3": Position(x=204.3, y=-318.3),
-        "B4": Position(x=304.3, y=-318.3),
-        "C1": Position(x=-4.3, y=-168.3),
-        "C2": Position(x=104.3, y=-168.3),
-        "C3": Position(x=204.3, y=-168.3),
-        "C4": Position(x=304.3, y=-168.3),
-        "D1": Position(x=-4.3, y=-18.3),
-        "D2": Position(x=104.3, y=-18.3),
-        "D3": Position(x=204.3, y=-18.3),
-        "D4": Position(x=304.3, y=-18.3),
+        "A1": Position(x=4.3, y=-470.3),
+        "A2": Position(x=104.3, y=-470.3),
+        "A3": Position(x=204.3, y=-470.3),
+        "A4": Position(x=304.3, y=-470.3),
+        "B1": Position(x=4.3, y=-320.3),
+        "B2": Position(x=104.3, y=-320.3),
+        "B3": Position(x=204.3, y=-320.3),
+        "B4": Position(x=304.3, y=-320.3),
+        "C1": Position(x=4.3, y=-170.3),
+        "C2": Position(x=104.3, y=-170.3),
+        "C3": Position(x=204.3, y=-170.3),
+        "C4": Position(x=304.3, y=-170.3),
+        "D1": Position(x=4.3, y=-20.3),
+        "D2": Position(x=104.3, y=-20.3),
+        "D3": Position(x=204.3, y=-20.3),
+        "D4": Position(x=304.3, y=-20.3),
     }
     
     def __init__(
@@ -573,8 +573,11 @@ class PipQuBotXL:
                 logger.error("Cannot get well position: no labware loaded in deck slot '%s'", deck_slot)
                 raise ValueError(f"No labware loaded in deck slot '{deck_slot}'. Load labware before accessing wells.")
             well_pos = labware.get_well_position(well_name).get_xy()
-            if labware.name == "sartorious_96_tiprack_1000ul":
-                # XL mounting: A is at low machine X, H at high X.
+            if labware.name in {
+                "sartorious_96_tiprack_1000ul",
+                "polyelectric_8_wellplate_30000ul",
+            }:
+                # XL mounting: the first row is at low machine X.
                 row_coordinates = [well["y"] for well in labware._wells.values()]
                 well_pos = Position(
                     x=well_pos.x,
