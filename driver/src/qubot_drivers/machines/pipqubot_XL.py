@@ -28,7 +28,7 @@ class PipQuBotXL:
     The deck has 16 slots arranged in a 4x4 grid (A1-D4).
     Each slot's origin location is stored for absolute movement calculation.
     """
-    CEILING_HEIGHT = 192.2 # Height from z and a origin to the deck
+    CEILING_HEIGHT = 244 # Height from z and a origin to the deck
 
     # Pipette
     Z_ORIGIN = Position(x=0, y=0, z=0)
@@ -40,7 +40,7 @@ class PipQuBotXL:
     
     # Default axis limits - customize based on your hardware
     DEFAULT_AXIS_LIMITS = {
-        "X": (0, 32),
+        "X": (0, 320),
         "Y": (-490, 0),
         "Z": (-170, 0),
         "A": (-170, 0),
@@ -48,22 +48,22 @@ class PipQuBotXL:
     
     # Slot origins (the bottom left corner of each deck slot relative to the deck origin)
     SLOT_ORIGINS = {
-        "A1": Position(x=-2.8, y=-469.1),
-        "A2": Position(x=102.8, y=-469.1),
-        "A3": Position(x=202.8, y=-469.1),
-        "A4": Position(x=302.8, y=-469.1),
-        "B1": Position(x=-2.8, y=-319.1),
-        "B2": Position(x=102.8, y=-319.1),
-        "B3": Position(x=202.8, y=-319.1),
-        "B4": Position(x=302.8, y=-319.1),
-        "C1": Position(x=-2.8, y=-169.1),
-        "C2": Position(x=102.8, y=-169.1),
-        "C3": Position(x=202.8, y=-169.1),
-        "C4": Position(x=302.8, y=-169.1),
-        "D1": Position(x=-2.8, y=-19.1),
-        "D2": Position(x=102.8, y=-19.1),
-        "D3": Position(x=202.8, y=-19.1),
-        "D4": Position(x=302.8, y=-19.1),
+        "A1": Position(x=4.3, y=-468.3),
+        "A2": Position(x=104.3, y=-468.3),
+        "A3": Position(x=204.3, y=-468.3),
+        "A4": Position(x=304.3, y=-468.3),
+        "B1": Position(x=-4.3, y=-318.3),
+        "B2": Position(x=104.3, y=-318.3),
+        "B3": Position(x=204.3, y=-318.3),
+        "B4": Position(x=304.3, y=-318.3),
+        "C1": Position(x=-4.3, y=-168.3),
+        "C2": Position(x=104.3, y=-168.3),
+        "C3": Position(x=204.3, y=-168.3),
+        "C4": Position(x=304.3, y=-168.3),
+        "D1": Position(x=-4.3, y=-18.3),
+        "D2": Position(x=104.3, y=-18.3),
+        "D3": Position(x=204.3, y=-18.3),
+        "D4": Position(x=304.3, y=-18.3),
     }
     
     def __init__(
@@ -511,6 +511,22 @@ class PipQuBotXL:
             "height_from_bottom": height_from_bottom,
         }
         
+    @command
+    @safety(
+        summary="Positions the pipette at the labware top plane without liquid handling.",
+        hazards=["collision", "pinch point"],
+        requires="Gantry homed, correct labware loaded, physical and software tip state consistent, and path clear.",
+    )
+    def move_to_well(self, *, deck_slot: str, well_name: str) -> Dict[str, float]:
+        """Move to the configured labware top plane; no insertion or pipetting.
+
+        Uses the current slot calibration, labware transform and software tip
+        offset. Returns the commanded machine coordinates in millimetres.
+        """
+        position = self._get_absolute_z_position(deck_slot.upper(), well_name)
+        self.qubot.move_absolute(position=position)
+        return position.to_dict()
+
     # Helper methods
     def _get_slot_origin(self, deck_slot: str) -> Position:
         """
@@ -557,7 +573,14 @@ class PipQuBotXL:
                 logger.error("Cannot get well position: no labware loaded in deck slot '%s'", deck_slot)
                 raise ValueError(f"No labware loaded in deck slot '{deck_slot}'. Load labware before accessing wells.")
             well_pos = labware.get_well_position(well_name).get_xy()
-            # the deck is rotated 90 degrees clockwise for this machine
+            if labware.name == "sartorious_96_tiprack_1000ul":
+                # XL mounting: A is at low machine X, H at high X.
+                row_coordinates = [well["y"] for well in labware._wells.values()]
+                well_pos = Position(
+                    x=well_pos.x,
+                    y=min(row_coordinates) + max(row_coordinates) - well_pos.y,
+                )
+            # Preserve the existing transform for other labware.
             pos += well_pos.swap_xy()
             # get z
             pos += Position(z=labware.get_height() - self.CEILING_HEIGHT)
