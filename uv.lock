@@ -11,6 +11,7 @@ members = [
     "pipqubot-mof-edge",
     "pipqubot-xl-edge",
     "qubot-drivers",
+    "syringequbot-edge",
 ]
 
 [[package]]
@@ -547,6 +548,27 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=9.0.2" }]
+
+[[package]]
+name = "syringequbot-edge"
+version = "0.1.0"
+source = { virtual = "syringequbot-edge" }
+dependencies = [
+    { name = "puda" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "python-dotenv" },
+    { name = "qubot-drivers" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "puda", specifier = ">=0.0.21" },
+    { name = "pydantic", specifier = ">=2.12.5" },
+    { name = "pydantic-settings", specifier = ">=2.12.0" },
+    { name = "python-dotenv", specifier = ">=1.2.1" },
+    { name = "qubot-drivers", editable = "driver" },
+]
 
 [[package]]
 name = "typing-extensions"

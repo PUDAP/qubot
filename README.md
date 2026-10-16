@@ -6,6 +6,7 @@ Monorepo for machine edge services and shared drivers.
 
 - `first-edge` — First machine edge service (serial ports for qubot and satorius)
 - `capper-edge` — Capper machine edge service (HTTP to qubot)
+- `syringequbot-edge` — Syringe Qubot edge service (HTTP to the same gantry as capper-edge, passive syringe)
 - `pipqubot-mof-edge` — MOF PipQuBot edge service (serial ports for the GRBL gantry and Sartorius pipette)
 - `pipqubot-xl-edge` — PipQuBot XL edge service (serial gantry, Sartorius pipette, and an A-axis capper head)
 - `miniqubot-edge` — MiniQubot edge service (one GRBL serial gantry, empty head; startup homes)
@@ -54,6 +55,22 @@ Edit `capper-edge/.env` and configure:
 - `MACHINE_ID`
 - `NATS_SERVERS`
 - `QUBOT_IP`
+
+### syringequbot-edge
+
+From repo root:
+
+```bash
+cp syringequbot-edge/.env.example syringequbot-edge/.env
+```
+
+Edit `syringequbot-edge/.env` and configure:
+
+- `MACHINE_ID`
+- `NATS_SERVERS`
+- `QUBOT_IP`
+
+Starting this service connects to the RepRap board and does not home.
 
 ### pipqubot-mof-edge
 
@@ -154,6 +171,26 @@ Stop:
 docker compose -f capper-edge/compose.yml down
 ```
 
+### syringequbot-edge
+
+Build and start:
+
+```bash
+docker compose -f syringequbot-edge/compose.yml up -d --build
+```
+
+View logs:
+
+```bash
+docker compose -f syringequbot-edge/compose.yml logs -f
+```
+
+Stop:
+
+```bash
+docker compose -f syringequbot-edge/compose.yml down
+```
+
 ### pipqubot-mof-edge
 
 Build and start:
@@ -226,6 +263,7 @@ From repo root:
 uv sync --all-packages
 uv run --package first-edge python first-edge/main.py
 uv run --package capper-edge python capper-edge/main.py
+uv run --package syringequbot-edge python syringequbot-edge/main.py
 uv run --package pipqubot-mof-edge python pipqubot-mof-edge/main.py
 uv run --package pipqubot-xl-edge python pipqubot-xl-edge/main.py
 uv run --package pescador-pipqubot-edge python pescador-pipqubot-edge/main.py
@@ -251,6 +289,7 @@ Build:
 ```bash
 docker compose -f first-edge/compose.yml build
 docker compose -f capper-edge/compose.yml build
+docker compose -f syringequbot-edge/compose.yml build
 docker compose -f pipqubot-mof-edge/compose.yml build
 docker compose -f pipqubot-xl-edge/compose.yml build
 docker compose -f pescador-pipqubot-edge/compose.yml build
@@ -261,6 +300,7 @@ Push:
 ```bash
 docker push ghcr.io/PUDAP/first-edge:latest
 docker push ghcr.io/PUDAP/capper-edge:latest
+docker push ghcr.io/pudap/syringequbot-edge:latest
 docker push ghcr.io/pudap/pipqubot-mof-edge:latest
 docker push ghcr.io/pudap/pipqubot-xl-edge:latest
 docker push ghcr.io/pudap/pescador-pipqubot-edge:latest
@@ -271,6 +311,7 @@ Or with Compose:
 ```bash
 docker compose -f first-edge/compose.yml push
 docker compose -f capper-edge/compose.yml push
+docker compose -f syringequbot-edge/compose.yml push
 docker compose -f pipqubot-mof-edge/compose.yml push
 docker compose -f pipqubot-xl-edge/compose.yml push
 docker compose -f pescador-pipqubot-edge/compose.yml push

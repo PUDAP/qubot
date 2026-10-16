@@ -1,0 +1,34 @@
+services:
+  syringequbot:
+    build:
+      context: ..
+      dockerfile: syringequbot-edge/Dockerfile
+    image: ghcr.io/pudap/syringequbot-edge:latest
+    container_name: syringequbot-edge
+    restart: unless-stopped
+    # localhost NATS URLs resolve to the broker on this PC.
+    network_mode: host
+    env_file:
+      - .env
+    environment:
+      PUDA_NATS_CA: "${PUDA_NATS_CA:+/run/puda-ca/ca.pem}"
+      PUDA_E2E_KEY_FILE: "${PUDA_E2E_KEY_FILE:+/run/puda-key/e2e.key}"
+    volumes:
+      - ./.env:/app/syringequbot-edge/.env:ro
+      - type: bind
+        source: ${PUDA_NATS_CA:-/dev/null}
+        target: /run/puda-ca/ca.pem
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${PUDA_E2E_KEY_FILE:-/dev/null}
+        target: /run/puda-key/e2e.key
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD", "uv", "run", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
