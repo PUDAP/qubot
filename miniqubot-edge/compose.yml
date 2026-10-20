@@ -12,6 +12,22 @@ services:
       NATS_SERVERS: ${NATS_SERVERS:?required}
       MACHINE_ID: ${MACHINE_ID:?required}
       QUBOT_PORT: /dev/ttyUSB0
+      HOME_ON_STARTUP: ${HOME_ON_STARTUP:-true}
+      PUDA_NATS_CA: "${PUDA_NATS_CA:+/run/puda-ca/ca.pem}"
+      PUDA_E2E_KEY_FILE: "${PUDA_E2E_KEY_FILE:+/run/puda-key/e2e.key}"
+    volumes:
+      - type: bind
+        source: ${PUDA_NATS_CA:-/dev/null}
+        target: /run/puda-ca/ca.pem
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${PUDA_E2E_KEY_FILE:-/dev/null}
+        target: /run/puda-key/e2e.key
+        read_only: true
+        bind:
+          create_host_path: false
     devices:
       - source: "${MINIQUBOT_HOST_DEVICE:?required}"
         target: /dev/ttyUSB0

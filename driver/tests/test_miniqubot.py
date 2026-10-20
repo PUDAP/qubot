@@ -2,6 +2,8 @@ import math
 
 import pytest
 from puda.command import get_safety, resolve_command_names
+from puda.machine_state import find_machine_state_handler
+from puda.tlm_stream import get_tlm_stream_spec
 
 from qubot_drivers.move.grblHAL import GrblHALController, GrblStatusReport
 from qubot_drivers.position import Position
@@ -84,6 +86,16 @@ def test_startup_checks_identity_then_homes():
     assert controller.calls[:3] == ["connect", "get_info", "$$"]
     assert ("home", None, True) in controller.calls
     assert machine._homed is True
+
+
+def test_startup_skips_homing_when_home_is_off():
+    controller = FakeController()
+    machine = MiniQubot(controller=controller)
+
+    machine.startup(home=False)
+
+    assert ("home", None, True) not in controller.calls
+    assert machine._homed is False
 
 
 def test_startup_does_not_home_when_identity_mismatches():
@@ -183,6 +195,12 @@ def test_miniqubot_is_not_a_pipette_or_capper_machine():
     assert get_safety(MiniQubot.move_absolute).confirm is False
     assert get_safety(MiniQubot.move_relative).confirm is False
     assert get_safety(MiniQubot.shutdown) is None
+    position_stream = get_tlm_stream_spec(MiniQubot.get_position)
+    assert position_stream is not None
+    assert position_stream.name == "pos"
+    assert position_stream.interval == 3.0
+    machine._homed = True
+    assert find_machine_state_handler(machine)() == {"homed": True}
 
 
 def test_startup_installs_axis_limits_before_homing():

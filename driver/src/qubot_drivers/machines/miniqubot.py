@@ -2,7 +2,7 @@
 
 import math
 
-from puda import command, safety
+from puda import command, machine_state, safety, tlm_stream
 from qubot_drivers.move.grblHAL import GrblHALController
 from qubot_drivers.position import Position
 
@@ -58,8 +58,8 @@ class MiniQubot:
         self.qubot = controller
         self._homed = False
 
-    def startup(self) -> None:
-        """Connect, check identity and settings, then home all axes."""
+    def startup(self, *, home: bool = True) -> None:
+        """Connect, check identity and settings, then home all axes when home is on."""
         self.qubot.connect()
         self._homed = False
         identity = self.qubot.get_info()
@@ -78,12 +78,18 @@ class MiniQubot:
             raise RuntimeError(f"GRBL settings mismatch: {mismatches}")
         for axis, (minimum, maximum) in AXIS_LIMITS.items():
             self.qubot.set_axis_limits(axis, minimum, maximum)
-        self.home()
+        if home:
+            self.home()
 
     def shutdown(self) -> None:
         """Close the serial port and drop same-session homing."""
         self.qubot.disconnect()
         self._homed = False
+
+    @machine_state
+    def snapshot(self) -> dict[str, bool]:
+        """Cached homing flag merged into MACHINE_STATE. It does not read the serial port."""
+        return {"homed": self._homed}
 
     @command
     @safety(
@@ -176,6 +182,7 @@ class MiniQubot:
         )
 
     @command
+    @tlm_stream(interval=3.0, name="pos")
     def get_position(self) -> dict[str, float]:
         """
         Read controller-reported XYZ machine position.

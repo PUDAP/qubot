@@ -4,7 +4,6 @@ import asyncio
 import logging
 import sys
 import time
-import psutil
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -25,6 +24,9 @@ class Config(BaseSettings):
     machine_id: str
     nats_servers: str
     qubot_port: str
+    home_on_startup: bool = True
+    puda_nats_ca: str = ""
+    puda_e2e_key_file: str = ""
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parent / ".env",
@@ -48,43 +50,26 @@ def load_config() -> Config:
 async def main():
     config = load_config()
     logger.info("Config loaded for %s", config.machine_id)
-    logger.info("Startup connects one GRBL controller and homes all axes")
+    logger.info(
+        "Startup connects one GRBL controller and homes all axes"
+        if config.home_on_startup
+        else "Startup connects one GRBL controller without homing"
+    )
 
     driver = MiniQubot(qubot_port=config.qubot_port)
-    driver.startup()
+    driver.startup(home=config.home_on_startup)
     logger.info("Machine driver initialized")
 
     edge_nats_client = EdgeNatsClient(
         servers=config.nats_server_list,
         machine_id=config.machine_id,
+        ca_file=config.puda_nats_ca or None,
+        e2e_key_file=config.puda_e2e_key_file or None,
     )
-
-    async def telemetry_handler():
-        await edge_nats_client.publish_heartbeat()
-        sensor = None
-        if hasattr(psutil, "sensors_temperatures"):
-            all_temps = psutil.sensors_temperatures() or {}
-            sensor = next(
-                (
-                    v[0]
-                    for k in ("coretemp", "cpu_thermal", "k10temp", "acpitz")
-                    if (v := all_temps.get(k))
-                ),
-                None,
-            )
-        await edge_nats_client.publish_health(
-            {
-                "cpu": psutil.cpu_percent(interval=None),
-                "mem": psutil.virtual_memory().percent,
-                "temp": sensor.current if sensor else None,
-            }
-        )
 
     runner = EdgeRunner(
         nats_client=edge_nats_client,
         machine_driver=driver,
-        telemetry_handler=telemetry_handler,
-        state_handler=lambda: {"homed": driver._homed},
     )
     await runner.connect()
     logger.info("%s edge service ready", config.machine_id)
