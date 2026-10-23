@@ -10,6 +10,7 @@ This class demonstrates the integration of:
 import asyncio
 import inspect
 import logging
+import math
 import time
 from typing import Any, Optional, Dict, Tuple, Union
 from puda import command, machine_state, safety, tlm_stream
@@ -513,17 +514,33 @@ class PipQuBotXL:
         
     @command
     @safety(
-        summary="Positions the pipette at the labware top plane without liquid handling.",
+        summary="Positions the pipette at the labware top plane or an optional height from the bottom without liquid handling.",
         hazards=["collision", "pinch point"],
         requires="Gantry homed, correct labware loaded, physical and software tip state consistent, and path clear.",
     )
-    def move_to_well(self, *, deck_slot: str, well_name: str) -> Dict[str, float]:
-        """Move to the configured labware top plane; no insertion or pipetting.
+    def move_to_well(
+        self, *, deck_slot: str, well_name: str, height_from_bottom: Optional[float] = None
+    ) -> Dict[str, float]:
+        """Position at the labware top plane or an optional bottom-relative height.
 
         Uses the current slot calibration, labware transform and software tip
-        offset. Returns the commanded machine coordinates in millimetres.
+        offset. ``height_from_bottom=None`` preserves the top plane; a specified
+        height in mm uses the same bottom reference as dispense_to, without
+        pipetting or tip operations. Returns commanded machine coordinates in mm.
+
+        Raises:
+            ValueError: If height is nonfinite or negative, labware is missing,
+                or the destination is outside the controller's axis limits.
         """
-        position = self._get_absolute_z_position(deck_slot.upper(), well_name)
+        if height_from_bottom is not None and (
+            not math.isfinite(height_from_bottom) or height_from_bottom < 0
+        ):
+            raise ValueError("height_from_bottom must be finite and non-negative")
+        deck_slot = deck_slot.upper()
+        position = self._get_absolute_z_position(deck_slot, well_name)
+        if height_from_bottom is not None:
+            position += Position(z=height_from_bottom)
+            position -= Position(z=self.deck[deck_slot].get_insert_depth())
         self.qubot.move_absolute(position=position)
         return position.to_dict()
 
