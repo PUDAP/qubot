@@ -36,6 +36,24 @@ logical deck after restart. A serial `Errno 5` can require restarting the sole
 edge to reopen a stale descriptor; never open a competing serial session, and
 never treat the shallow container health check as proof of pipette connectivity.
 
+## XL BioShake row orientation
+
+The operator-verified XL mounting requires raw labware-Y reflection before the
+existing XY swap: **A↔D and B↔C**, with columns unchanged. The XL well-position
+helper applies `min(row_y) + max(row_y) - raw_y` for `bioshake`, as it already
+does for the separately verified Sartorius and Polyelectric mountings. This
+machine/labware-scoped override preserves shared `bioshake.json`, sibling-machine
+orientation, slot origins, Z/insert depth, tip offset and volume conversion.
+Use normal `bioshake` and unchanged well labels; do not swap protocol labels or
+apply a second mirror. Regression coverage spans all 24 wells with/without tips.
+
+With the currently calibrated B1 origin, corrected row machine-X coordinates are
+A=16.54, B=34.54, C=52.54, D=70.54 mm. Column machine-Y remains
+`-302.42 + 18*(column-1)` mm. These examples are not permanent calibration.
+The confirmed bottom-relative dispense height remains 21 mm (current attached-tip
+Z=-56.80 mm); mirror correction alone never authorizes a validation move, pickup,
+repeated dispense or home.
+
 ## Run on Windows
 
 ```powershell

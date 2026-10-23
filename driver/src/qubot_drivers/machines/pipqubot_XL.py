@@ -593,6 +593,7 @@ class PipQuBotXL:
             if labware.name in {
                 "sartorious_96_tiprack_1000ul",
                 "polyelectric_8_wellplate_30000ul",
+                "bioshake",
             }:
                 # XL mounting: the first row is at low machine X.
                 row_coordinates = [well["y"] for well in labware._wells.values()]
