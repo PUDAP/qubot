@@ -88,7 +88,7 @@ class SyringeQubot:
         hazards=["collision"],
         requires="Deck is clear.",
         forbidden_when="Do not home while the controller is disconnected.",
-        confirm=True,
+        confirm=False,
     )
     def home(self) -> bool:
         """
@@ -112,7 +112,7 @@ class SyringeQubot:
         hazards=["collision"],
         requires="Home in this connection and keep the path clear.",
         forbidden_when="Do not move while a person is in the workspace.",
-        confirm=True,
+        confirm=False,
     )
     def move_to(self, x: float, y: float, z: float) -> dict[str, float]:
         """
@@ -143,7 +143,7 @@ class SyringeQubot:
         hazards=["collision"],
         requires="Home in this connection. Z 0 must be above every obstacle.",
         forbidden_when="Do not move while a person is in the workspace.",
-        confirm=True,
+        confirm=False,
     )
     def safe_move_to(self, x: float, y: float, z: float) -> dict[str, float]:
         """
@@ -200,7 +200,7 @@ class SyringeQubot:
         hazards=["collision"],
         requires="Deck is clear.",
         forbidden_when="Do not reset while a person is in the workspace.",
-        confirm=True,
+        confirm=False,
     )
     def reset(self) -> bool:
         """
