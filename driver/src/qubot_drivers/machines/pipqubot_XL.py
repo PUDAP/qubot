@@ -34,6 +34,9 @@ class PipQuBotXL:
     # Pipette
     Z_ORIGIN = Position(x=0, y=0, z=0)
     TIP_LENGTH = 97  # Pipette tip length in mm
+    # BRL1000-1 is the rLine 50-1000 µL head: 2.5 µL/step (manual v1.1 Table 1).
+    # 100 µL is RI40 and 1000 µL is RI400. This override is XL-only.
+    MICROLITER_PER_STEP = 2.5
     
     # Capper (vertical travel on the A axis)
     CAPPER_ORIGIN = Position(x=60, y=0, a=0)
@@ -104,7 +107,10 @@ class PipQuBotXL:
         for axis, (min_val, max_val) in limits.items():
             self.qubot.set_axis_limits(axis, min_val, max_val)
 
-        self.pipette = SatoriusController(port_name=satorius_port)
+        self.pipette = SatoriusController(
+            port_name=satorius_port,
+            microliter_per_step=self.MICROLITER_PER_STEP,
+        )
 
         logger.info(
             "PipQuBot XL machine initialized: qubot=%s, satorius_port=%s",
