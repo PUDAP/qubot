@@ -65,6 +65,24 @@ The confirmed bottom-relative dispense height remains 21 mm (current attached-ti
 Z=-56.80 mm); mirror correction alone never authorizes a validation move, pickup,
 repeated dispense or home.
 
+## PipQuBot XL proxy-vial dispensing
+
+The operator-confirmed XL X travel limit is **345 mm**. The driver exposes the
+machine-specific calibration `70792568-cf46-493a-8ce6-5fdf08025df6` through
+`dispense_to_proxy_vial(well_name=..., amount=...)`; it does not expose a generic
+raw-coordinate liquid command. Proxy wells A1-A6/B1-B6 use calibrated absolute
+machine coordinates, including B6 at `[338.0, -210.0, -28.5]` mm. The controller's
+normal staged `move_absolute` path retracts both pipette Z and capper A to `-5 mm`
+before XY travel, descends pipette Z only over the selected vial, then restores
+capper A to `0 mm`. Both Z and A must be homed and both transit paths clear.
+
+An edge restart clears the process-local tip flag but does not remove a physical
+tip. Only after fresh operator confirmation that exactly one empty tip is still
+attached, use `reconcile_tip_attached(physical_tip_confirmed=true)`; this command
+changes software state only and performs no hardware I/O. Both reconciliation and
+proxy dispensing publish confirmation safety metadata. Never reconcile when tip
+presence or retained liquid is uncertain.
+
 ## Run on Windows
 
 ```powershell

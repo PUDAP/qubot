@@ -45,7 +45,7 @@ class PipQuBotXL:
     
     # Default axis limits - customize based on your hardware
     DEFAULT_AXIS_LIMITS = {
-        "X": (0, 320),
+        "X": (0, 345),
         "Y": (-490, 0),
         "Z": (-170, 0),
         "A": (-170, 0),
@@ -69,6 +69,22 @@ class PipQuBotXL:
         "D2": Position(x=104.3, y=-20.3),
         "D3": Position(x=204.3, y=-20.3),
         "D4": Position(x=304.3, y=-20.3),
+    }
+
+    PROXY_VIAL_CALIBRATION_ID = "70792568-cf46-493a-8ce6-5fdf08025df6"
+    PROXY_VIAL_POSITIONS = {
+        "A1": Position(x=318.5, y=-310.0, z=-28.5),
+        "A2": Position(x=318.5, y=-290.0, z=-28.5),
+        "A3": Position(x=318.5, y=-270.0, z=-28.5),
+        "A4": Position(x=318.5, y=-250.0, z=-28.5),
+        "A5": Position(x=318.5, y=-230.0, z=-28.5),
+        "A6": Position(x=318.5, y=-210.0, z=-28.5),
+        "B1": Position(x=338.0, y=-310.0, z=-28.5),
+        "B2": Position(x=338.0, y=-290.0, z=-28.5),
+        "B3": Position(x=338.0, y=-270.0, z=-28.5),
+        "B4": Position(x=338.0, y=-250.0, z=-28.5),
+        "B5": Position(x=338.0, y=-230.0, z=-28.5),
+        "B6": Position(x=338.0, y=-210.0, z=-28.5),
     }
     
     def __init__(
@@ -290,6 +306,31 @@ class PipQuBotXL:
         
     ### Pipette operations ###
     @command
+    @safety(
+        summary="Reconciles software tip state with an operator-confirmed attached physical tip after an edge restart.",
+        hazards=["physical/software tip-state mismatch"],
+        requires="The operator has freshly confirmed that exactly one disposable tip is physically attached and the tip contains no liquid.",
+        forbidden_when="Do not reconcile if tip attachment or retained liquid is uncertain.",
+        confirm=True,
+    )
+    def reconcile_tip_attached(self, *, physical_tip_confirmed: bool) -> Dict[str, bool]:
+        """Restore software attachment state without moving hardware.
+
+        Args:
+            physical_tip_confirmed: Must be true after direct operator confirmation.
+
+        Returns:
+            Dictionary containing the reconciled software tip state.
+
+        Raises:
+            ValueError: If explicit physical confirmation is absent.
+        """
+        if physical_tip_confirmed is not True:
+            raise ValueError("physical_tip_confirmed must be true")
+        self.pipette.set_tip_attached(attached=True)
+        return {"tip_attached": True}
+
+    @command
     def attach_tip(self, deck_slot: str, well_name: str) -> Dict[str, bool]:
         """
         Attach a tip from a deck slot and well.
@@ -470,6 +511,56 @@ class PipQuBotXL:
             "well_name": well_name,
             "amount": amount,
             "height_from_bottom": height_from_bottom,
+        }
+
+    @command
+    @safety(
+        summary="Retracts Z and capper A to safe transit height, moves XY to a calibrated proxy vial, descends Z, restores A, and dispenses liquid.",
+        hazards=["collision", "pinch point", "chemical exposure", "capper A-axis motion"],
+        requires="Gantry Z and capper A axis homed; operator-confirmed 345 mm X travel; calibrated proxy rack unchanged; attached tip and tracked liquid state reconciled; capper and tip transit paths clear.",
+        forbidden_when="Do not run if the proxy rack moved, the destination is occupied beyond capacity, or tip/liquid state is uncertain.",
+        confirm=False,
+    )
+    def dispense_to_proxy_vial(self, *, well_name: str, amount: int) -> Dict[str, Any]:
+        """Dispense at a calibrated absolute proxy-vial position.
+
+        Args:
+            well_name: Proxy rack well A1-A6 or B1-B6.
+            amount: Positive volume to dispense in microlitres.
+
+        Returns:
+            Well, volume, calibrated machine coordinates, and calibration UUID.
+
+        Raises:
+            KeyError: If the proxy well is unknown.
+            ValueError: If amount is nonpositive or no tip is attached.
+        """
+        well_name = well_name.upper()
+        if well_name not in self.PROXY_VIAL_POSITIONS:
+            raise KeyError(f"Unknown proxy vial well: {well_name}")
+        if amount <= 0:
+            raise ValueError(f"Dispense amount must be positive, got {amount}")
+        if not self.pipette.is_tip_attached():
+            raise ValueError("Tip not attached")
+        tracked_volume = self.pipette.get_tracked_volume()
+        if amount > tracked_volume:
+            raise ValueError(
+                f"Dispense amount {amount} uL exceeds tracked aspirated volume "
+                f"{tracked_volume} uL"
+            )
+
+        calibrated = self.PROXY_VIAL_POSITIONS[well_name]
+        position = Position(x=calibrated.x, y=calibrated.y, z=calibrated.z)
+        self.qubot.move_absolute(position=position)
+        self.pipette.dispense(amount=amount)
+        time.sleep(5)
+        return {
+            "well_name": well_name,
+            "amount": amount,
+            "x": position.x,
+            "y": position.y,
+            "z": position.z,
+            "calibration_id": self.PROXY_VIAL_CALIBRATION_ID,
         }
         
     @command
