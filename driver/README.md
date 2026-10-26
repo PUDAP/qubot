@@ -28,7 +28,7 @@ pip install qubot-drivers
 The following device types are supported:
 
 - **GCode** - G-code compatible motion systems (e.g., QuBot)
-- **Satorius rLINE®** - Electronic pipettes and robotic dispensers. `SatoriusController` requires an `RLineModel` (`UL_5_200`, `UL_50_1000`, or `UL_100_5000`) and has no numeric volume default. PipQuBot XL, PipQuBot MOF, and First already pass a model. The Pescador `Pipette` class and `PipQuBotV3` still construct the controller without one; update those local edges to pass the installed head's model before deploying this driver, or startup fails when the controller is created.
+- **Satorius rLINE®** - Electronic pipettes and robotic dispensers. The v1.1 technical manual is in `docs/Sartorius-rLine-technical-user-manual-v1.1.pdf`. `SatoriusController` requires an `RLineModel` (`UL_5_200`, `UL_50_1000`, or `UL_100_5000`) and has no numeric volume default. PipQuBot XL, PipQuBot MOF, and First already pass a model. The Pescador `Pipette` class and `PipQuBotV3` still construct the controller without one; update those local edges to pass the installed head's model before deploying this driver, or startup fails when the controller is created.
 - **Camera** - Webcams and USB cameras for image and video capture
 
 ## Finding Serial Ports
