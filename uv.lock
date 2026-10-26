@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14"
 
 [manifest]
@@ -210,7 +210,6 @@ name = "miniqubot-edge"
 version = "0.1.0"
 source = { virtual = "miniqubot-edge" }
 dependencies = [
-    { name = "psutil" },
     { name = "puda" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -220,8 +219,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "psutil", specifier = ">=6.0.0" },
-    { name = "puda", specifier = ">=0.0.17" },
+    { name = "puda", specifier = ">=0.0.21" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
