@@ -11,13 +11,11 @@ IP, and Sartorius serial port. `HOME_GANTRY_ON_STARTUP` and
 
 ## Sartorius XL volume calibration
 
-The PipQuBot XL head is a BRL1000-1 (rLine 50-1000 µL). Its machine-specific
-scale is **2.5 µL/step**, from rLine manual v1.1 Table 1. The conversion is
-`steps = volume_µL / 2.5`, so 100 µL emits `RI40` and 1,000 µL emits `RI400`.
-
-`PipQuBotXL` passes this value explicitly. Do not change the generic Sartorius
-default of 0.5 µL/step; that default belongs to the 5-200 µL head used by the
-other machines. Software tests verify the generated step count. Rebuild and recreate the XL
+The PipQuBot XL head is a BRL1000-1 (rLine 50-1000 µL). Its machine selects
+`RLineModel.UL_50_1000`, which is **2.5 µL/step** from rLine manual v1.1 Table 1.
+The conversion is `steps = volume_µL / 2.5`, so 100 µL emits `RI40` and 1,000 µL
+emits `RI400`. The shared controller has no numeric default; every caller passes
+a model. Software tests verify the generated step count. Rebuild and recreate the XL
 edge after pulling this change so the running service uses it. After deployment, validate
 physical delivery with a fresh tip and an independent volume or gravimetric
 measurement before relying on accuracy for samples.

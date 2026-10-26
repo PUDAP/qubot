@@ -9,6 +9,7 @@ import logging
 import re
 from typing import Dict, Optional
 
+from qubot_drivers.rline import RLINE_SPECS, RLineModel, RLineSpec
 from qubot_drivers.serialcontroller import SerialController
 
 STATUS_CODES: Dict[str, str] = {
@@ -35,7 +36,6 @@ class SatoriusController(SerialController):
     SLAVE_ADDRESS = "1"
     PROTOCOL_TERMINATOR = "º\r"
 
-    MICROLITER_PER_STEP = 0.5
     SUCCESS_RESPONSE = "ok"
     ERROR_RESPONSE = "err"
     MIN_SPEED = 1
@@ -54,19 +54,36 @@ class SatoriusController(SerialController):
         port_name: Optional[str] = None,
         baudrate: int = DEFAULT_BAUDRATE,
         timeout: int = DEFAULT_TIMEOUT,
-        microliter_per_step: float = MICROLITER_PER_STEP,
+        *,
+        model: RLineModel,
     ):
         super().__init__(port_name, baudrate, timeout)
+        try:
+            spec = RLINE_SPECS[model]
+        except KeyError as exc:
+            raise ValueError(f"Unknown rLine model: {model!r}") from exc
+
         self._logger = logging.getLogger("qubot_drivers.satorius")
         self._logger.info(
-            "Satorius Controller initialized with port='%s', baudrate=%s, timeout=%s",
+            "Satorius Controller initialized with port='%s', baudrate=%s, timeout=%s, model=%s",
             port_name,
             baudrate,
             timeout,
+            model.value,
         )
         self._tip_attached: bool = False
         self._volume: int = 0
-        self._microliter_per_step = microliter_per_step
+        self.model = model
+        self.spec: RLineSpec = spec
+
+    def _steps_for_volume(self, amount: int, command_name: str) -> int:
+        steps = int(amount / self.spec.microliters_per_step)
+        if steps > self.spec.max_position:
+            raise ValueError(
+                f"{command_name} of {amount} uL is {steps} steps, past "
+                f"{self.model.value} max position {self.spec.max_position}"
+            )
+        return steps
 
     def _is_complete_unterminated_response(self, response: bytes) -> bool:
         return self.RESPONSE_PATTERN_BYTES.fullmatch(response) is not None
@@ -182,7 +199,7 @@ class SatoriusController(SerialController):
         if amount <= 0:
             raise ValueError(f"Aspiration amount must be positive, got {amount}")
 
-        steps = int(amount / self._microliter_per_step)
+        steps = self._steps_for_volume(amount, "RI")
         self._logger.info("** Aspirating %s uL (RI%s steps) **", amount, steps)
         self.execute(command="RI", value=str(steps))
         self._logger.info("** Aspirated %s uL Successfully **\n", amount)
@@ -202,13 +219,15 @@ class SatoriusController(SerialController):
             self._logger.info("** Dispensed %s uL Successfully **\n", amount)
             return
 
-        steps = int(amount / self._microliter_per_step)
+        steps = self._steps_for_volume(amount, "RO")
         self._logger.info("** Dispensing %s uL (RO%s steps) **", amount, steps)
         self.execute(command="RO", value=str(steps))
         self._logger.info("** Dispensed %s uL Successfully **\n", amount)
         self._volume -= amount
 
-    def eject_tip(self, return_position: int = 30) -> None:
+    def eject_tip(self, return_position: Optional[int] = None) -> None:
+        if return_position is None:
+            return_position = self.spec.home_position
         position_str = self._validate_no_leading_zeros(
             command_name="RE",
             value=return_position,

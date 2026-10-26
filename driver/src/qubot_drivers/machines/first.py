@@ -14,6 +14,7 @@ from typing import Any, Optional, Dict, Tuple, Union
 from puda import command, machine_state, tlm_stream
 from qubot_drivers.move import RepRapController, Deck
 from qubot_drivers import Position
+from qubot_drivers.rline import RLineModel
 from qubot_drivers.satorius import SatoriusController
 
 logger = logging.getLogger(__name__)
@@ -92,7 +93,10 @@ class First:
         for axis, (min_val, max_val) in limits.items():
             self.qubot.set_axis_limits(axis, min_val, max_val)
 
-        self.pipette = SatoriusController(port_name=satorius_port)
+        self.pipette = SatoriusController(
+            port_name=satorius_port,
+            model=RLineModel.UL_5_200,
+        )
 
         logger.info(
             "First machine initialized: qubot_port=%s, satorius_port=%s",

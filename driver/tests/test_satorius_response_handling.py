@@ -3,6 +3,7 @@ import time
 
 import pytest
 
+from qubot_drivers.rline import RLINE_SPECS, RLineModel
 from qubot_drivers.satorius import SatoriusController, SatoriusDeviceError
 from qubot_drivers.serialcontroller import SerialController
 
@@ -38,7 +39,8 @@ def make_controller() -> SatoriusController:
     controller._logger = logging.getLogger("test.sartorius")
     controller._volume = 0
     controller._tip_attached = False
-    controller._microliter_per_step = controller.MICROLITER_PER_STEP
+    controller.model = RLineModel.UL_5_200
+    controller.spec = RLINE_SPECS[RLineModel.UL_5_200]
     return controller
 
 
@@ -58,7 +60,7 @@ def test_custom_volume_conversion_maps_1000_ul_to_400_steps(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(SerialController, "__init__", lambda self, *args, **kwargs: None)
-    controller = SatoriusController(microliter_per_step=2.5)
+    controller = SatoriusController(model=RLineModel.UL_50_1000)
     commands: list[tuple[str, str | None]] = []
     monkeypatch.setattr(
         controller,
@@ -106,7 +108,7 @@ def test_partial_dispense_uses_relative_outward_move(
 
 
 def test_unterminated_position_reply_finishes_without_warning(caplog) -> None:
-    controller = SatoriusController(port_name="fake", timeout=1)
+    controller = SatoriusController(port_name="fake", model=RLineModel.UL_5_200, timeout=1)
     controller._serial = FakeSerialResponse(b"1dp443")
 
     started = time.monotonic()

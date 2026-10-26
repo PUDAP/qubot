@@ -2,7 +2,11 @@
 
 import asyncio
 
+import pytest
+
 from qubot_drivers import Position
+from qubot_drivers.rline import RLineModel
+from qubot_drivers.satorius import SatoriusController
 
 from qubot_drivers.machines import pipqubot_XL as module
 
@@ -62,13 +66,11 @@ def test_xl_uses_brl1000_microliters_per_step(monkeypatch):
         satorius_port="/dev/pipette",
     )
 
-    assert machine.MICROLITER_PER_STEP == 2.5
-    assert getattr(machine.pipette, "kwargs")["microliter_per_step"] == 2.5
+    assert machine.PIPETTE_MODEL is RLineModel.UL_50_1000
+    assert getattr(machine.pipette, "kwargs")["model"] is RLineModel.UL_50_1000
 
 
 def test_xl_scale_emits_ri40_for_100ul_and_ri400_for_1000ul(monkeypatch):
-    from qubot_drivers.satorius import SatoriusController
-
     sent = []
 
     def capture(command, value=None, timeout=None):
@@ -77,7 +79,7 @@ def test_xl_scale_emits_ri40_for_100ul_and_ri400_for_1000ul(monkeypatch):
 
     controller = SatoriusController(
         port_name="/dev/pipette",
-        microliter_per_step=module.PipQuBotXL.MICROLITER_PER_STEP,
+        model=module.PipQuBotXL.PIPETTE_MODEL,
     )
     monkeypatch.setattr(controller, "execute", capture)
 
@@ -85,7 +87,8 @@ def test_xl_scale_emits_ri40_for_100ul_and_ri400_for_1000ul(monkeypatch):
     controller.aspirate(1000)
 
     assert sent == [("RI", "40"), ("RI", "400")]
-    assert SatoriusController.MICROLITER_PER_STEP == 0.5
+    with pytest.raises(TypeError):
+        SatoriusController(port_name="/dev/pipette")
 
 
 def test_motion_free_startup_connects_without_homing_or_pipette_initialization(monkeypatch):

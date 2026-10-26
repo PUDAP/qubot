@@ -1,5 +1,6 @@
 import logging
 import asyncio
+from qubot_drivers.rline import RLineModel
 from qubot_drivers.satorius import SatoriusController
 from qubot_drivers import setup_logging
 
@@ -32,7 +33,7 @@ def test_pipette_operations():
     of the SatoriusController.
     """
     print("--- 🔬 Starting Pipette Controller Test ---")
-    pipette = SatoriusController(port_name=SATORIUS_PORT)
+    pipette = SatoriusController(port_name=SATORIUS_PORT, model=RLineModel.UL_5_200)
 
     try:
         # 1. Initialize and Connect

@@ -13,6 +13,7 @@ import time
 from typing import Optional, Dict, Tuple, Union
 from qubot_drivers.move import GrblHALController, Deck
 from qubot_drivers import Position
+from qubot_drivers.rline import RLineModel
 from qubot_drivers.satorius import SatoriusController
 from puda import command, machine_state, safety, tlm_stream
 
@@ -34,7 +35,8 @@ class PipQuBotMOF:
     # Pipette
     Z_ORIGIN = Position(x=0, y=0, z=0)
     TIP_LENGTH = 97 # Pipette tip length in mm
-    SARTORIUS_MICROLITER_PER_STEP = 2.5
+    # rLine 50-1000 µL head: 2.5 µL/step (manual v1.1 Table 1).
+    PIPETTE_MODEL = RLineModel.UL_50_1000
 
     
     # Default axis limits - customize based on your hardware
@@ -90,7 +92,7 @@ class PipQuBotMOF:
 
         self.pipette = SatoriusController(
             port_name=satorius_port,
-            microliter_per_step=self.SARTORIUS_MICROLITER_PER_STEP,
+            model=self.PIPETTE_MODEL,
         )
 
         logger.info(
