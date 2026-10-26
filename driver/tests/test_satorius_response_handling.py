@@ -44,6 +44,13 @@ def make_controller() -> SatoriusController:
     return controller
 
 
+def test_get_tracked_volume_returns_process_local_aspirated_volume() -> None:
+    controller = make_controller()
+    controller._volume = 321
+
+    assert controller.get_tracked_volume() == 321
+
+
 def test_execute_raises_on_sartorius_er2(monkeypatch: pytest.MonkeyPatch) -> None:
     controller = make_controller()
     monkeypatch.setattr(
@@ -125,3 +132,35 @@ def test_get_position_parses_sartorius_dp_reply(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr(controller, "execute", lambda command: "1dp443")
 
     assert controller.get_position() == 443
+
+
+def test_get_device_info_queries_model_version_and_position(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    controller = make_controller()
+    responses = {"DM": "1dm710995", "DV": "1dv1025", "DP": "1dp30"}
+    commands: list[str] = []
+
+    def execute(command: str) -> str:
+        commands.append(command)
+        return responses[command]
+
+    monkeypatch.setattr(controller, "execute", execute)
+
+    assert controller.get_device_info() == {
+        "model": "710995",
+        "firmware_version": 1025,
+        "position_steps": 30,
+        "tracked_volume_ul": 0,
+    }
+    assert commands == ["DM", "DV", "DP"]
+
+
+def test_get_device_info_rejects_malformed_identity_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    controller = make_controller()
+    monkeypatch.setattr(controller, "execute", lambda command: "1ok")
+
+    with pytest.raises(SatoriusDeviceError, match="model"):
+        controller.get_device_info()

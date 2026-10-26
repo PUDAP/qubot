@@ -43,6 +43,15 @@ class FakePipette:
     def get_position(self):
         return 12
 
+    def get_device_info(self):
+        self.calls.append(("get_device_info",))
+        return {
+            "model": "710995",
+            "firmware_version": 1025,
+            "position_steps": 30,
+            "tracked_volume_ul": 0,
+        }
+
 
 def test_xl_uses_http_controller_when_qubot_ip_is_configured(monkeypatch):
     monkeypatch.setattr(module, "RepRapHTTPController", FakeQubot, raising=False)
@@ -120,3 +129,20 @@ def test_get_position_accepts_synchronous_http_controller(monkeypatch):
         "qubot": {"x": 1.0, "y": 2.0, "z": 3.0, "a": 4.0},
         "pipette": 12,
     }
+
+
+def test_get_pipette_info_exposes_read_only_identity(monkeypatch):
+    monkeypatch.setattr(module, "RepRapHTTPController", FakeQubot, raising=False)
+    monkeypatch.setattr(module, "SatoriusController", FakePipette)
+    machine = module.PipQuBotXL(
+        qubot_ip="192.168.2.224",
+        satorius_port="/dev/pipette",
+    )
+
+    assert machine.get_pipette_info() == {
+        "model": "710995",
+        "firmware_version": 1025,
+        "position_steps": 30,
+        "tracked_volume_ul": 0,
+    }
+    assert machine.pipette.calls == [("get_device_info",)]

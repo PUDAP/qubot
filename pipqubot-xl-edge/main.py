@@ -17,6 +17,7 @@ logging.basicConfig(
     force=True,
 )
 logging.getLogger("qubot_drivers").setLevel(logging.WARNING)
+logging.getLogger("qubot_drivers.satorius").setLevel(logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 

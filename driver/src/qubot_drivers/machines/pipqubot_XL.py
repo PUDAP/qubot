@@ -207,6 +207,12 @@ class PipQuBotXL:
             "qubot": qubot_position.to_dict(),
             "pipette": self.pipette.get_position(),
         }
+
+    @command
+    def get_pipette_info(self) -> Dict[str, int | str]:
+        """Return read-only Sartorius model, firmware, piston position, and tracked volume."""
+        return self.pipette.get_device_info()
+
     @command
     def get_deck(self) -> Dict[str, str]:
         """

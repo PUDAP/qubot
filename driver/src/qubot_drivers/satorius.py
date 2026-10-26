@@ -294,6 +294,35 @@ class SatoriusController(SerialController):
         self._logger.info("** Position: %s steps **\n", position)
         return position
 
+    def get_model(self) -> str:
+        """Return the rLine model/catalog identifier reported by ``DM``."""
+        response = self.execute(command="DM")
+        match = re.fullmatch(r"\x01?1dm([A-Za-z0-9._-]+)", response, re.IGNORECASE)
+        if match is None:
+            raise SatoriusDeviceError(
+                f"Invalid response format for model query: {response}"
+            )
+        return match.group(1)
+
+    def get_firmware_version(self) -> int:
+        """Return the numeric firmware version reported by ``DV``."""
+        response = self.execute(command="DV")
+        match = re.fullmatch(r"\x01?1dv(\d+)", response, re.IGNORECASE)
+        if match is None:
+            raise SatoriusDeviceError(
+                f"Invalid response format for firmware version query: {response}"
+            )
+        return int(match.group(1))
+
+    def get_device_info(self) -> Dict[str, int | str]:
+        """Return read-only identity, position, and process-local volume state."""
+        return {
+            "model": self.get_model(),
+            "firmware_version": self.get_firmware_version(),
+            "position_steps": self.get_position(),
+            "tracked_volume_ul": self.get_tracked_volume(),
+        }
+
     def get_liquid_level(self) -> int:
         self._logger.info("** Querying Liquid Level (DN) **")
         response = self.execute(command="DN")
@@ -302,6 +331,10 @@ class SatoriusController(SerialController):
 
     def is_tip_attached(self) -> bool:
         return self._tip_attached
+
+    def get_tracked_volume(self) -> int:
+        """Return the process-local aspirated liquid volume in microlitres."""
+        return self._volume
 
     def set_tip_attached(self, attached: bool) -> None:
         self._tip_attached = attached
