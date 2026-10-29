@@ -148,6 +148,15 @@ class GrblWSController:
         self._logger.info("-> Sending: %r", payload.rstrip())
         self._ws.send(payload)
 
+    @staticmethod
+    def _message_has_command_response(message: str) -> bool:
+        """Return True if any line in a websocket frame is an ok/error response."""
+        for line in message.splitlines():
+            stripped = line.strip()
+            if stripped == "ok" or stripped.startswith("error:"):
+                return True
+        return False
+
     def _read_response(self, timeout: Optional[float] = None) -> str:
         deadline = time.monotonic() + (timeout or self._timeout)
         responses: list[str] = []
@@ -163,8 +172,7 @@ class GrblWSController:
                 continue
 
             responses.append(message)
-            stripped = message.strip()
-            if stripped == "ok" or stripped.startswith("error:"):
+            if self._message_has_command_response(message):
                 return "\n".join(responses)
 
         raise TimeoutError("Timeout waiting for GRBL response")
