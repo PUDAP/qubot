@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from qubot_drivers.machines.pipqubot_XL import PipQuBotXL
+from _pipqubot_xl_edge_driver import PipQuBotXL
 from qubot_drivers.position import Position
 
 
@@ -14,7 +14,7 @@ def block_hardware(monkeypatch):
 
     monkeypatch.setattr("serial.Serial", forbidden)
     monkeypatch.setattr("urllib.request.urlopen", forbidden)
-    monkeypatch.setattr("qubot_drivers.machines.pipqubot_XL.time.sleep", lambda _: None)
+    monkeypatch.setattr("_pipqubot_xl_edge_driver.time.sleep", lambda _: None)
 
 
 def make_machine() -> PipQuBotXL:

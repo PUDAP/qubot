@@ -11,9 +11,47 @@ Monorepo for machine edge services and shared drivers.
 - `pipqubot-xl-edge` — PipQuBot XL edge service (serial gantry, Sartorius pipette, and an A-axis capper head)
 - `miniqubot-edge` — MiniQubot edge service (one GRBL serial gantry, empty head; startup homes)
 - `pescador-pipqubot-edge` — Pescador PipQuBot edge service (WebSocket gantry and Sartorius pipette)
-- `driver` — Shared machine drivers
+- `pipqubot-v3-edge` — Preserved legacy V3 implementation; no configured service or deployment entrypoint
+- `driver` — Shared controllers, position/deck/labware utilities, and logging only
 
-Each edge's `main.py` wraps the matching class in `qubot_drivers.machines`. Public hardware methods are marked `@command` so PUDA can advertise them.
+Machine implementations live directly in their owning edge folders as
+`driver.py`. Each configured edge's `main.py` imports its adjacent driver.
+Public hardware methods are marked `@command` so PUDA can advertise them.
+
+| Owning folder | Import |
+| --- | --- |
+| `first-edge` | `from driver import First` |
+| `capper-edge` | `from driver import Capper` |
+| `miniqubot-edge` | `from driver import MiniQubot` |
+| `pescador-pipqubot-edge` | `from driver import Pipette`; `from pescador import Pescador` |
+| `pipqubot-mof-edge` | `from driver import PipQuBotMOF` |
+| `pipqubot-xl-edge` | `from driver import PipQuBotXL` |
+| `syringequbot-edge` | `from driver import SyringeQubot` |
+| `pipqubot-v3-edge` | `from driver import PipQuBotV3` |
+
+The former machine imports from the shared driver library are removed (no
+compatibility shims). Edges are non-package (virtual) workspace members: sync
+their dependencies, then run from the owning edge folder. Docker retains that
+edge's directory and the shared driver source on `PYTHONPATH`. Do not put several
+edge directories on one import path; offline tests load each local driver under
+a unique importlib alias using root `conftest.py`.
+`Pescador` is the gantry-only variant of the Pescador pipetting machine
+and is retained beside `Pipette`; its existing service still uses `Pipette`.
+V3 retains its separate calibration and is not substituted for MOF.
+
+## Offline development checks
+
+```bash
+uv sync --all-packages --group dev --frozen
+uv run --all-packages --group dev --frozen pytest
+```
+
+Root pytest configuration collects controller/labware tests and edge unit tests
+only. Manual machine-motion scripts live under the owning edge's `examples/`
+and must not be run without operator approval. Imports alone do not initialize
+hardware; starting an edge or running an example can home or move it.
+After approval, run an example from its owning edge folder with that folder on
+the import path, e.g. `PYTHONPATH=. uv run python examples/first.py` in `first-edge`.
 
 ## Prerequisites
 

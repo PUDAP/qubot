@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 import pytest
-from qubot_drivers.machines.pipqubot_XL import PipQuBotXL
+from _pipqubot_xl_edge_driver import PipQuBotXL
 from qubot_drivers.position import Position
 
 

@@ -3,7 +3,7 @@
 import random
 import time
 import logging
-from qubot_drivers.machines import First
+from driver import First
 from qubot_drivers.labware import get_available_labware
 from qubot_drivers import setup_logging
 

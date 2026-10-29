@@ -7,7 +7,7 @@ from puda.tlm_stream import get_tlm_stream_spec
 
 from qubot_drivers.move.grblHAL import GrblHALController, GrblStatusReport
 from qubot_drivers.position import Position
-from qubot_drivers.machines.miniqubot import AXIS_LIMITS, EXPECTED_IDENTITY, MiniQubot
+from _miniqubot_edge_driver import AXIS_LIMITS, EXPECTED_IDENTITY, MiniQubot
 
 
 SETTINGS = "\n".join(
@@ -71,8 +71,8 @@ class FakeController:
         self.position = (position.x, position.y, position.z)
 
 
-def test_package_exports_miniqubot():
-    from qubot_drivers.machines import MiniQubot as exported
+def test_edge_driver_exports_miniqubot():
+    from _miniqubot_edge_driver import MiniQubot as exported
 
     assert exported is MiniQubot
 

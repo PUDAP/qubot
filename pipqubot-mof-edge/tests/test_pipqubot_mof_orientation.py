@@ -1,7 +1,7 @@
 import pytest
 
 from qubot_drivers import Position
-from qubot_drivers.machines.pipqubot_mof import PipQuBotMOF
+from _pipqubot_mof_edge_driver import PipQuBotMOF
 
 
 def test_mof_tiprack_rows_match_physical_a_to_h_orientation():

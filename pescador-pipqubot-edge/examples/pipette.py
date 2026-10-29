@@ -4,9 +4,19 @@ import asyncio
 import logging
 
 from qubot_drivers import setup_logging
-from qubot_drivers.machines.pipette import Pipette
+from driver import Pipette
 
-from main import load_config
+import importlib.util
+from pathlib import Path
+
+# Load the owning edge explicitly; do not resolve another edge's global main.
+spec = importlib.util.spec_from_file_location(
+    "pescador_edge_main", Path(__file__).resolve().parents[1] / "main.py"
+)
+assert spec and spec.loader
+edge_main = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(edge_main)
+load_config = edge_main.load_config
 
 TRANSFER_VOLUME = 20  # µL
 

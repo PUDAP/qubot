@@ -17,4 +17,4 @@ WORKDIR /app/pipqubot-xl-edge
 RUN uv sync --frozen --no-dev --no-install-project --package pipqubot-xl-edge
 
 ENV PYTHONPATH=/app/pipqubot-xl-edge:/app/driver/src
-CMD ["uv", "run", "python", "main.py"]
+CMD ["uv", "run", "--frozen", "--no-sync", "python", "main.py"]

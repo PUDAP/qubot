@@ -9,6 +9,7 @@ members = [
     "miniqubot-edge",
     "pescador-pipqubot-edge",
     "pipqubot-mof-edge",
+    "pipqubot-v3-edge",
     "pipqubot-xl-edge",
     "qubot-drivers",
     "syringequbot-edge",
@@ -332,6 +333,17 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "qubot-drivers", editable = "driver" },
 ]
+
+[[package]]
+name = "pipqubot-v3-edge"
+version = "0.1.0"
+source = { virtual = "pipqubot-v3-edge" }
+dependencies = [
+    { name = "qubot-drivers" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "qubot-drivers", editable = "driver" }]
 
 [[package]]
 name = "pipqubot-xl-edge"

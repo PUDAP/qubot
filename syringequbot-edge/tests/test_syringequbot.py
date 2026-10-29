@@ -3,7 +3,7 @@
 import pytest
 from puda.command import get_safety, resolve_command_names
 
-from qubot_drivers.machines.syringequbot import SyringeQubot
+from _syringequbot_edge_driver import SyringeQubot
 from qubot_drivers.position import Position
 
 
@@ -39,8 +39,8 @@ class FakeController:
         self.calls.append(("limits", axis, minimum, maximum))
 
 
-def test_package_exports_syringequbot():
-    from qubot_drivers.machines import SyringeQubot as exported
+def test_edge_driver_exports_syringequbot():
+    from _syringequbot_edge_driver import SyringeQubot as exported
 
     assert exported is SyringeQubot
 

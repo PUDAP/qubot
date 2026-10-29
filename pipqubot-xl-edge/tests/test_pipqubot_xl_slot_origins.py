@@ -1,4 +1,4 @@
-from qubot_drivers.machines.pipqubot_XL import PipQuBotXL
+from _pipqubot_xl_edge_driver import PipQuBotXL
 
 
 def test_pipqubot_xl_slot_origins_match_calibrated_positions() -> None:

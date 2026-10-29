@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from puda import EdgeNatsClient, EdgeRunner
-from qubot_drivers.machines.pipette import Pipette
+from driver import Pipette
 
 
 # Configure logging

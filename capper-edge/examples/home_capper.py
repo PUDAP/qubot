@@ -1,6 +1,6 @@
 """Home the capper machine."""
 
-from qubot_drivers.machines.capper import Capper
+from driver import Capper
 
 
 def main():

@@ -5,7 +5,19 @@ members = [
     "pescador-pipqubot-edge",
     "pipqubot-mof-edge",
     "pipqubot-xl-edge",
+    "pipqubot-v3-edge",
     "miniqubot-edge",
     "syringequbot-edge",
     "driver",
 ]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+    "driver/tests",
+    "miniqubot-edge/tests",
+    "pipqubot-mof-edge/tests",
+    "pipqubot-xl-edge/tests",
+    "syringequbot-edge/tests",
+]
+norecursedirs = ["examples", ".venv", "dist", "build"]

@@ -1,0 +1,10 @@
+[project]
+name = "pipqubot-v3-edge"
+version = "0.1.0"
+description = "Legacy PipQuBot V3 machine implementation (not a configured service)"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = ["qubot-drivers"]
+
+[tool.uv.sources]
+qubot-drivers = { workspace = true }

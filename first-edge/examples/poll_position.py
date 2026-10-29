@@ -4,7 +4,7 @@ import asyncio
 import logging
 import time
 from datetime import datetime
-from qubot_drivers.machines import First
+from driver import First
 from qubot_drivers import Position, setup_logging
 
 setup_logging(

@@ -2,14 +2,14 @@ from qubot_drivers.rline import RLineModel
 
 
 def test_mof_driver_has_distinct_class_identity():
-    from qubot_drivers.machines.pipqubot_mof import PipQuBotMOF
+    from _pipqubot_mof_edge_driver import PipQuBotMOF
 
     assert PipQuBotMOF.__name__ == "PipQuBotMOF"
-    assert PipQuBotMOF.__module__ == "qubot_drivers.machines.pipqubot_mof"
+    assert PipQuBotMOF.__module__ == "_pipqubot_mof_edge_driver"
 
 
 def test_mof_uses_50_1000_rline_model(monkeypatch):
-    import qubot_drivers.machines.pipqubot_mof as module
+    import _pipqubot_mof_edge_driver as module
 
     class FakeQubot:
         def __init__(self, **kwargs):

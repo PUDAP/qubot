@@ -29,5 +29,5 @@ RUN uv sync --frozen --no-dev --no-install-project --package first-edge
 
 ENV PYTHONPATH=/app/first-edge:/app/driver/src
 
-CMD ["uv", "run", "python", "main.py"]
+CMD ["uv", "run", "--frozen", "--no-sync", "python", "main.py"]
 

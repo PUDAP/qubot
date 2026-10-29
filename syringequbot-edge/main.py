@@ -8,7 +8,7 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from puda import EdgeNatsClient, EdgeRunner
-from qubot_drivers.machines.syringequbot import SyringeQubot
+from driver import SyringeQubot
 
 
 logging.basicConfig(

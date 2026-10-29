@@ -18,10 +18,13 @@ Qubot Hardware drivers for the PUDA (Physical Unified Device Architecture) platf
 pip install qubot-drivers
 ```
 
-## Available machines
+## Scope
 
-- **Biologic**
-- **First**
+This package contains shared motion/serial/pipette/camera controllers, position
+types, deck/labware utilities, and logging. Machine implementations and their
+calibrations belong to `driver.py` in the individual `*-edge` folders, not this library.
+See the repository README for their import paths. Machine-specific tests live
+with their edges; controller and labware tests remain here.
 
 ## Device Support
 
@@ -119,7 +122,10 @@ uv run pytest tests/ -v
 uv run pytest tests/ --cov=qubot_drivers --cov-report=html
 ```
 
-**Note:** Make sure you're in the `libs/drivers` directory or use the full path to the tests directory when running pytest commands.
+**Note:** The commands above assume the `driver/` directory. To include all
+edge unit tests from the repository root, run
+`uv run --all-packages --group dev --frozen pytest`. Manual machine scripts now
+live under their owning edge's `examples/` and are not offline tests.
 
 ### Building and Publishing
 

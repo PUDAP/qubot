@@ -1,5 +1,5 @@
 import pytest
-from qubot_drivers.machines.pipqubot_XL import PipQuBotXL
+from _pipqubot_xl_edge_driver import PipQuBotXL
 
 
 def test_sartorius_rows_follow_operator_verified_physical_orientation():

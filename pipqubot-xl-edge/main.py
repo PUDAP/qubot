@@ -8,7 +8,7 @@ from pathlib import Path
 
 from puda import EdgeNatsClient, EdgeRunner
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from qubot_drivers.machines import PipQuBotXL
+from driver import PipQuBotXL
 
 
 logging.basicConfig(

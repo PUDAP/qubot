@@ -2,13 +2,16 @@
 
 import importlib.util
 from pathlib import Path
+from unittest.mock import patch
+import _pipqubot_xl_edge_driver
 
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "main.py"
 SPEC = importlib.util.spec_from_file_location("pipqubot_xl_edge_main", MODULE_PATH)
 assert SPEC and SPEC.loader
 main = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(main)
+with patch.dict("sys.modules", {"driver": _pipqubot_xl_edge_driver}):
+    SPEC.loader.exec_module(main)
 
 
 class FakeDriver:

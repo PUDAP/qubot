@@ -25,4 +25,4 @@ RUN uv sync --frozen --no-dev --no-install-project --package capper-edge
 
 ENV PYTHONPATH=/app/capper-edge:/app/driver/src
 
-CMD ["uv", "run", "python", "main.py"]
+CMD ["uv", "run", "--frozen", "--no-sync", "python", "main.py"]

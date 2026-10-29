@@ -8,7 +8,7 @@ from qubot_drivers import Position
 from qubot_drivers.rline import RLineModel
 from qubot_drivers.satorius import SatoriusController
 
-from qubot_drivers.machines import pipqubot_XL as module
+import _pipqubot_xl_edge_driver as module
 
 
 class FakeQubot:

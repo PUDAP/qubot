@@ -18,4 +18,4 @@ WORKDIR /app/syringequbot-edge
 RUN uv sync --frozen --no-dev --no-install-project --package syringequbot-edge
 
 ENV PYTHONPATH=/app/syringequbot-edge:/app/driver/src
-CMD ["uv", "run", "python", "main.py"]
+CMD ["uv", "run", "--frozen", "--no-sync", "python", "main.py"]

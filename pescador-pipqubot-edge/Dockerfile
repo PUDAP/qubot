@@ -21,4 +21,4 @@ RUN uv sync --frozen --no-dev --no-install-project --package pescador-pipqubot-e
 
 ENV PYTHONPATH=/app/pescador-pipqubot-edge:/app/driver/src
 
-CMD ["uv", "run", "python", "main.py"]
+CMD ["uv", "run", "--frozen", "--no-sync", "python", "main.py"]
