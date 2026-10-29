@@ -15,6 +15,10 @@ services:
     # Compose still reads this file for ${QUBOT_PORT} / ${SATORIUS_PORT} substitution above.
     volumes:
       - ./.env:/app/first-edge/.env:ro
+      - /home/puda/.config/puda/e2e:/run/puda-e2e:ro
+    environment:
+      PUDA_NATS_CA: /run/puda-e2e/ca.pem
+      PUDA_E2E_KEY_FILE: /run/puda-e2e/pudadev.key
     healthcheck:
       test: ["CMD", "uv", "run", "python", "-c", "import sys; sys.exit(0)"]
       interval: 30s
