@@ -20,6 +20,15 @@ edge after pulling this change so the running service uses it. After deployment,
 physical delivery with a fresh tip and an independent volume or gravimetric
 measurement before relying on accuracy for samples.
 
+## Sartorius dispense behavior
+
+The XL selects `RLineModel.UL_50_1000` (2.5 µL/step). A dispense equal
+to the process-local tracked aspirated volume uses the original `RB` path, while
+partial dispenses use `RO`. The automatic `RP30` Home preload and `DP` position
+verification introduced during the blowout investigation have been rolled back.
+Read-only pipette identity/position diagnostics and serial frame validation remain.
+No physical blowout effectiveness is inferred from this software behavior.
+
 ## Pure pipette positioning
 
 `move_to_well(deck_slot=..., well_name=...)` retains the configured labware-top
@@ -46,6 +55,24 @@ activation. Confirm controller axis-homed flags independently and reload the
 logical deck after restart. A serial `Errno 5` can require restarting the sole
 edge to reopen a stale descriptor; never open a competing serial session, and
 never treat the shallow container health check as proof of pipette connectivity.
+
+### USB reconnect: refresh Docker's device mapping
+
+A stable by-id name does not refresh an existing container's device node after
+USB re-enumeration. Compare the host and container character-device major/minor
+numbers; an old node/open descriptor can raise `termios` I/O errors even though
+the adapter is present on the host. With operator approval, empty command queues,
+and both startup-motion gates verified `false`, recreate only this service using
+the existing image (no rebuild or pull):
+
+```bash
+docker compose up -d --no-build --pull never --force-recreate --no-deps pipqubot-xl
+```
+
+Verify matching device numbers, fresh valid pipette `DP` replies, unchanged gantry
+coordinates, idle/unreserved state and empty queues. Recreation clears logical
+deck and tip bookkeeping, not the physical tip; restore/reconcile these only
+within an authorized continuation. Never repeat a completed tip pickup.
 
 ## XL BioShake row orientation
 
