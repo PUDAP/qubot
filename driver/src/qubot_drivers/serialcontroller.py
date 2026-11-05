@@ -177,7 +177,7 @@ class SerialController(ABC):
             )
             return None
 
-    def _read_response(self, timeout: int = None) -> str:
+    def _read_response(self, timeout: Optional[float] = None) -> str:
         """
         Generic, blocking read that respects timeout and returns
         all data that arrived within the timeout period.
@@ -192,9 +192,17 @@ class SerialController(ABC):
         response = b""
 
         while time.time() - start_time < timeout:
-            if self._serial.in_waiting > 0:
-                # Read all available bytes
-                response += self._serial.read(self._serial.in_waiting)
+            waiting = self._serial.in_waiting
+            if waiting > 0:
+                # Snapshot the byte count once: some USB adapters can change
+                # ``in_waiting`` between consecutive property reads.
+                response += self._serial.read(waiting)
+
+                # Some USB serial adapters keep ``in_waiting`` truthy while a
+                # complete frame is already buffered. Check device-specific
+                # completion immediately instead of waiting for an empty poll.
+                if response and self._is_complete_unterminated_response(response):
+                    break
 
                 # Check for expected response markers for early return for qubot
                 if b"ok" in response or b"err" in response:
@@ -240,7 +248,7 @@ class SerialController(ABC):
         """
         raise NotImplementedError
 
-    def execute(self, command: str, value: Optional[str] = None, timeout: int = None) -> str:
+    def execute(self, command: str, value: Optional[str] = None, timeout: Optional[float] = None) -> str:
         """
         Send a command and read the response atomically.
         

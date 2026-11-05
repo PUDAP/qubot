@@ -7,6 +7,7 @@ Reference: https://api.sartorius.com/document-hub/dam/download/34901/Sartorius-r
 import json
 import logging
 import re
+import time
 from typing import Dict, Optional
 
 from qubot_drivers.rline import RLINE_SPECS, RLineModel, RLineSpec
@@ -41,11 +42,11 @@ class SatoriusController(SerialController):
     MIN_SPEED = 1
     MAX_SPEED = 6
     RESPONSE_PATTERN_BYTES = re.compile(
-        rb"^\x01?1(?:ok|er[1-4]|[a-z]{2}-?\d+)$",
+        rb"^\x01?1(?:ok|er[1-4]|[a-z]{2}[a-z0-9._-]+)$",
         re.IGNORECASE,
     )
     RESPONSE_PATTERN_TEXT = re.compile(
-        r"^\x01?1(?:ok|er[1-4]|[a-z]{2}-?\d+)$",
+        r"^\x01?1(?:ok|er[1-4]|[a-z]{2}[a-z0-9._-]+)$",
         re.IGNORECASE,
     )
 
@@ -86,10 +87,76 @@ class SatoriusController(SerialController):
         return steps
 
     def _is_complete_unterminated_response(self, response: bytes) -> bool:
-        return self.RESPONSE_PATTERN_BYTES.fullmatch(response) is not None
+        normalized = response.rstrip(b"\r\n")
+        return self.RESPONSE_PATTERN_BYTES.fullmatch(normalized) is not None
 
     def _is_expected_response(self, response: str) -> bool:
         return self.RESPONSE_PATTERN_TEXT.fullmatch(response) is not None
+
+    def _read_response(self, timeout: Optional[float] = None) -> str:
+        """Read rLine HT/address/payload/LRC/CR before decoding any bytes.
+
+        The generic reader cannot identify binary LRC frames reliably. Legacy
+        unframed adapters are supported only after CR or a bounded quiet period;
+        a numeric prefix alone is never evidence of a complete native frame.
+        """
+        if not self.is_connected or self._serial is None:
+            raise SatoriusDeviceError("Pipette serial port is disconnected")
+        deadline = time.monotonic() + (self._timeout if timeout is None else timeout)
+        raw = b""
+        last_byte_at = None
+        while time.monotonic() < deadline:
+            waiting = self._serial.in_waiting
+            chunk = self._serial.read(waiting) if waiting else b""
+            if chunk:
+                raw += chunk
+                last_byte_at = time.monotonic()
+                if raw.startswith(b"\t") and b"\r" in raw:
+                    packet, trailing = raw.split(b"\r", 1)
+                    if trailing.strip(b"\n") or len(packet) < 5:
+                        raise SatoriusDeviceError(f"Invalid rLine frame: {raw!r}")
+                    payload, received_lrc = packet[1:-1], packet[-1]
+                    expected_lrc = 0
+                    for byte in payload:
+                        expected_lrc ^= byte
+                    if received_lrc != (expected_lrc | 0x80):
+                        raise SatoriusDeviceError(f"Invalid rLine checksum: {raw!r}")
+                    try:
+                        text = payload.decode("ascii")
+                    except UnicodeDecodeError as exc:
+                        raise SatoriusDeviceError(f"Invalid rLine payload: {raw!r}") from exc
+                    if not self._is_expected_response(text):
+                        raise SatoriusDeviceError(f"Invalid rLine address/payload: {raw!r}")
+                    self._logger.debug("<- Received raw frame %r; payload %r", raw, text)
+                    return text
+                if not raw.startswith(b"\t") and b"\r" in raw:
+                    break
+            elif (raw and not raw.startswith(b"\t") and last_byte_at is not None
+                  and time.monotonic() - last_byte_at >= 0.03):
+                break
+            time.sleep(0.005)
+        if not raw or raw.startswith(b"\t"):
+            raise SatoriusDeviceError(f"Incomplete rLine response before deadline: {raw!r}")
+        try:
+            text = raw.rstrip(b"\r\n").decode("ascii")
+        except UnicodeDecodeError as exc:
+            raise SatoriusDeviceError(f"Invalid unframed rLine response: {raw!r}") from exc
+        if not self._is_expected_response(text):
+            raise SatoriusDeviceError(f"Invalid unframed rLine response: {raw!r}")
+        self._logger.debug("<- Received unframed response: %r", text)
+        return text
+
+    def _wait_ready(self, timeout: Optional[float] = None) -> None:
+        """An OK acknowledges receipt, not motion completion (manual p18)."""
+        deadline = time.monotonic() + (self._timeout if timeout is None else timeout)
+        while time.monotonic() < deadline:
+            response = self.execute(command="DS", timeout=max(0.001, deadline - time.monotonic()))
+            if response == "1ds0":
+                return
+            if response not in {"1ds1", "1ds2", "1ds4", "1ds6"}:
+                raise SatoriusDeviceError(f"Pipette completion status failure: {response}")
+            time.sleep(min(0.02, max(0.0, deadline - time.monotonic())))
+        raise SatoriusDeviceError("Pipette completion status timed out; no automatic retry")
 
     def _build_command(self, command: str, value: Optional[str] = None) -> str:
         return (
@@ -104,7 +171,7 @@ class SatoriusController(SerialController):
         self,
         command: str,
         value: Optional[str] = None,
-        timeout: Optional[int] = None,
+        timeout: Optional[float] = None,
     ) -> str:
         if timeout is None:
             response = super().execute(command=command, value=value)
@@ -193,6 +260,7 @@ class SatoriusController(SerialController):
         position_str = self._validate_no_leading_zeros(position, "RP")
         self._logger.info("** Run to absolute Position (RP, Position: %s) **", position)
         self.execute(command="RP", value=position_str)
+        self._wait_ready()
         self._logger.info("** Reached Position %s Successfully **\n", position)
 
     def aspirate(self, amount: int) -> None:
@@ -253,6 +321,7 @@ class SatoriusController(SerialController):
             self._logger.info("** Running Blowout (RB) **")
             self.execute(command="RB")
 
+        self._wait_ready()
         self._logger.info("** Blowout Complete **\n")
 
     def get_status(self) -> str:

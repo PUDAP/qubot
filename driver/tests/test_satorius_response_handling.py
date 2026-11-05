@@ -24,6 +24,38 @@ class FakeSerialResponse:
         return self._chunks.pop(0)
 
 
+class StickyInWaitingSerial(FakeSerialResponse):
+    """Model an adapter that keeps ``in_waiting`` truthy after frame delivery."""
+
+    @property
+    def in_waiting(self) -> int:
+        return super().in_waiting or 1
+
+    def read(self, _size: int) -> bytes:
+        return super().read(_size) if self._chunks else b""
+
+
+class RacyInWaitingSerial(FakeSerialResponse):
+    """Model a byte count that changes between two property reads."""
+
+    def __init__(self, *chunks: bytes):
+        super().__init__(*chunks)
+        self._next_read_has_bytes = True
+
+    @property
+    def in_waiting(self) -> int:
+        if not self._chunks:
+            return 0
+        if self._next_read_has_bytes:
+            self._next_read_has_bytes = False
+            return len(self._chunks[0])
+        self._next_read_has_bytes = True
+        return 0
+
+    def read(self, size: int) -> bytes:
+        return super().read(size) if size else b""
+
+
 def frame(payload: bytes, *, lrc: int | None = None) -> bytes:
     checksum = lrc
     if checksum is None:
@@ -38,6 +70,7 @@ def make_controller() -> SatoriusController:
     controller = object.__new__(SatoriusController)
     controller._logger = logging.getLogger("test.sartorius")
     controller._volume = 0
+    controller._timeout = 10
     controller._tip_attached = False
     controller.model = RLineModel.UL_5_200
     controller.spec = RLINE_SPECS[RLineModel.UL_5_200]
@@ -84,15 +117,24 @@ def test_full_volume_dispense_uses_blowout(monkeypatch: pytest.MonkeyPatch) -> N
     controller = make_controller()
     controller._volume = 100
     commands: list[tuple[str, str | None]] = []
-    monkeypatch.setattr(
-        controller,
-        "execute",
-        lambda command, value=None: commands.append((command, value)) or "1ok",
-    )
+    position = 100
+
+    def execute(command: str, value=None, timeout=None) -> str:
+        nonlocal position
+        commands.append((command, value))
+        if command == "DP":
+            return f"1dp{position}"
+        if command == "DS":
+            return "1ds0"
+        if command == "RB":
+            position = 0
+        return "1ok"
+
+    monkeypatch.setattr(controller, "execute", execute)
 
     controller.dispense(100)
 
-    assert commands == [("RB", None)]
+    assert commands == [("RB", None), ("DS", None)]
     assert controller._volume == 0
 
 
@@ -125,6 +167,39 @@ def test_unterminated_position_reply_finishes_without_warning(caplog) -> None:
     assert response == "1dp443"
     assert time.monotonic() - started < 0.5
     assert "unexpected response" not in caplog.text
+
+
+def test_carriage_return_terminated_reply_finishes_without_timeout() -> None:
+    controller = SatoriusController(port_name="fake", model=RLineModel.UL_5_200, timeout=1)
+    setattr(controller, "_serial", FakeSerialResponse(b"1dp-1\r"))
+
+    started = time.monotonic()
+    response = controller._read_response(timeout=1)
+
+    assert response == "1dp-1"
+    assert time.monotonic() - started < 0.5
+
+
+def test_complete_frame_finishes_when_adapter_keeps_in_waiting_truthy() -> None:
+    controller = SatoriusController(port_name="fake", model=RLineModel.UL_5_200, timeout=1)
+    setattr(controller, "_serial", StickyInWaitingSerial(b"1dp-1\r"))
+
+    started = time.monotonic()
+    response = controller._read_response(timeout=1)
+
+    assert response == "1dp-1"
+    assert time.monotonic() - started < 0.5
+
+
+def test_read_uses_single_in_waiting_snapshot() -> None:
+    controller = SatoriusController(port_name="fake", model=RLineModel.UL_5_200, timeout=1)
+    setattr(controller, "_serial", RacyInWaitingSerial(b"1dp-1\r"))
+
+    started = time.monotonic()
+    response = controller._read_response(timeout=1)
+
+    assert response == "1dp-1"
+    assert time.monotonic() - started < 0.5
 
 
 def test_get_position_parses_sartorius_dp_reply(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -164,3 +239,79 @@ def test_get_device_info_rejects_malformed_identity_response(
 
     with pytest.raises(SatoriusDeviceError, match="model"):
         controller.get_device_info()
+
+
+def test_unterminated_alphanumeric_model_reply_finishes_without_timeout() -> None:
+    controller = SatoriusController(port_name="fake", model=RLineModel.UL_5_200, timeout=1)
+    setattr(controller, "_serial", FakeSerialResponse(b"1dmBRL1000-1"))
+
+    started = time.monotonic()
+    response = controller._read_response(timeout=1)
+
+    assert response == "1dmBRL1000-1"
+    assert time.monotonic() - started < 0.5
+
+
+def test_rejected_standalone_blowout_preserves_volume(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    controller = make_controller()
+    controller._volume = 275
+
+    def execute(command: str, value=None) -> str:
+        if command == "DP":
+            return "1dp140"
+        raise SatoriusDeviceError(
+            "Sartorius rejected RB: er2 (command would result in an out-of-bounds state)"
+        )
+
+    monkeypatch.setattr(controller, "execute", execute)
+
+    with pytest.raises(SatoriusDeviceError, match="er2"):
+        controller.run_blowout()
+
+    assert controller.get_tracked_volume() == 275
+
+
+def test_native_framed_reply_finishes_without_serial_timeout() -> None:
+    controller = SatoriusController(port_name="fake", model=RLineModel.UL_5_200, timeout=1)
+    controller._serial = FakeSerialResponse(frame(b"1dp30"))
+    started = time.monotonic()
+    assert controller._read_response(timeout=1) == "1dp30"
+    assert time.monotonic() - started < 0.5
+
+
+@pytest.mark.parametrize("payload", [b"1dp30", b"1dmBRL1000-1", b"1er4"])
+def test_native_fragmented_reply_waits_for_checksum_and_terminator(payload) -> None:
+    controller = SatoriusController(port_name="fake", model=RLineModel.UL_5_200, timeout=1)
+    raw = frame(payload)
+    controller._serial = FakeSerialResponse(raw[:5], raw[5:-1], raw[-1:])
+    assert controller._read_response(timeout=1) == payload.decode("ascii")
+
+
+@pytest.mark.parametrize("raw", [frame(b"1dp30", lrc=0x80), b"\t1dp30", frame(b"2dp30")])
+def test_native_invalid_reply_never_becomes_position(raw) -> None:
+    controller = SatoriusController(port_name="fake", model=RLineModel.UL_5_200, timeout=0.02)
+    controller._serial = FakeSerialResponse(raw)
+    with pytest.raises((SatoriusDeviceError, TimeoutError)):
+        controller._read_response(timeout=0.02)
+
+
+def test_home_drive_error_blocks_position_acceptance(monkeypatch) -> None:
+    controller = SatoriusController(port_name="fake", model=RLineModel.UL_5_200)
+    monkeypatch.setattr(controller, "execute", lambda command, value=None, timeout=None: "1ds8" if command == "DS" else "1ok")
+    with pytest.raises(SatoriusDeviceError, match="status"):
+        controller.run_to_position(30)
+
+
+def test_completion_status_has_bounded_deadline(monkeypatch) -> None:
+    controller = SatoriusController(port_name="fake", model=RLineModel.UL_5_200, timeout=0.02)
+    calls = []
+    def execute(command, value=None, timeout=None):
+        calls.append(command)
+        return "1ds2" if command == "DS" else "1ok"
+    monkeypatch.setattr(controller, "execute", execute)
+    with pytest.raises(SatoriusDeviceError, match="timed out"):
+        controller.run_to_position(30)
+    assert calls.count("RP") == 1
+    assert "DP" not in calls
