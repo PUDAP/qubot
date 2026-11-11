@@ -1,9 +1,19 @@
 # First edge
 
-The PUDA service entrypoint is `main.py`. Machine implementation and calibration
-live in `driver.py`, imported as `from driver import First` from this folder.
-Shared controllers and labware come from `qubot-drivers`.
+PUDA edge for the original Qubot gantry and a Sartorius pipette. The entrypoint is `main.py`. The machine class is `First` in `driver.py`.
 
-See the repository README for environment, Docker, and baremetal setup.
-Starting this edge can home the gantry and initialize the pipette.
-Scripts in `examples/` are manual hardware operations, not offline tests.
+## Configure
+
+Copy `.env.example` to `.env`. Set `MACHINE_ID`, `NATS_SERVERS`, `QUBOT_PORT`, and `SATORIUS_PORT`. Use a `/dev/serial/by-id/` path for each serial device.
+
+## Run
+
+From this directory:
+
+```bash
+docker compose up -d --build
+```
+
+Starting connects both controllers, homes the gantry, and initializes the pipette. Scripts in `examples/` are manual hardware operations.
+
+Live commands: `puda machine commands first`.

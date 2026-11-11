@@ -1,18 +1,19 @@
 # Pescador PipQuBot edge
 
-The existing `main.py` service uses `Pipette` from the adjacent `driver.py`.
-The gantry-only `Pescador` variant is preserved beside it in `pescador.py`;
-no second service is started. From this folder:
+The running service uses `Pipette` from `driver.py`. The gantry-only `Pescador` class in `pescador.py` is not a second service.
 
-```python
-from driver import Pipette
-from pescador import Pescador
+## Configure
+
+Copy `.env.example` to `.env`. Set `MACHINE_ID`, `NATS_SERVERS`, `QUBOT_IP`, and `SATORIUS_PORT`. Set the rLine model for the installed head. The preserved constructor does not name that model, and this edge does not guess one.
+
+## Run
+
+From this directory:
+
+```bash
+docker compose up -d --build
 ```
 
-See the repository README for environment, Docker, and baremetal setup.
-Imports do not connect to hardware. Starting the service can home and initialize
-the pipette. The preserved legacy `Pipette` constructor still omits the explicit
-`RLineModel` required by `SatoriusController`; identify the installed head and
-configure its model before deployment. No model is guessed by this refactor.
+Imports do not connect to hardware. Starting can home the gantry and initialize the pipette. `examples/pipette.py` is a manual hardware operation.
 
-`examples/pipette.py` is a manual hardware-motion script, not an offline test.
+Live commands: `puda machine commands pescador-pipqubot`.

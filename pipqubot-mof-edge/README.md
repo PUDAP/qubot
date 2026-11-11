@@ -1,5 +1,19 @@
-# MOF PipQuBot Edge
+# MOF PipQuBot edge
 
-PUDA edge service for the MOF PipQuBot. It connects the GRBL gantry and Sartorius pipette serial controllers, then publishes machine commands and telemetry through NATS.
+PUDA edge for the MOF PipQuBot. It connects the GRBL gantry and a Sartorius pipette, then publishes commands and telemetry.
 
-Starting this edge runs the machine driver's startup routine, which connects both controllers, homes the gantry, and initializes the pipette.
+## Configure
+
+Copy `.env.example` to `.env`. Set `MACHINE_ID`, `NATS_SERVERS`, `QUBOT_PORT`, and `SATORIUS_PORT`. Use a `/dev/serial/by-id/` path for each serial device.
+
+## Run
+
+From this directory:
+
+```bash
+docker compose up -d --build
+```
+
+Starting connects both controllers, homes the gantry, and initializes the pipette.
+
+Live commands: `puda machine commands pipqubot_mof`.
