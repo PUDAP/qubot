@@ -135,6 +135,7 @@ class PipQuBotMOF:
         summary='Homes the gantry into its limit switches and re-initializes the pipette; the gantry can collide.',
         hazards=['collision', 'lost-steps'],
         requires='Deck is clear and the motor-power cutoff is reachable.',
+        confirm=False,
     )
     def home(self):
         """
@@ -250,6 +251,7 @@ class PipQuBotMOF:
         summary='Moves the gantry to the top of a labware well.',
         hazards=['collision'],
         requires='Gantry is homed and labware is loaded in the slot.',
+        confirm=False,
     )
     def move_to_well(self, *, deck_slot: str, well_name: str) -> Dict[str, float]:
         """Move to the top of a loaded labware well without liquid handling."""
@@ -264,6 +266,7 @@ class PipQuBotMOF:
         summary='Moves only the Z axis by a signed distance.',
         hazards=['collision'],
         requires='Gantry is homed and nothing is in the Z path.',
+        confirm=False,
     )
     def move_z_relative(self, *, distance_mm: float) -> Dict[str, float]:
         """Move only the Z axis by a signed relative distance in millimetres."""
@@ -275,9 +278,35 @@ class PipQuBotMOF:
     ### Pipette operations ###
     @command
     @safety(
+        summary="Reconciles software tip state with an operator-confirmed attached physical tip after an edge restart.",
+        hazards=["physical/software tip-state mismatch"],
+        requires="The operator has freshly confirmed that exactly one disposable tip is physically attached and the tip contains no liquid.",
+        forbidden_when="Do not reconcile if tip attachment or retained liquid is uncertain.",
+        confirm=True,
+    )
+    def reconcile_tip_attached(self, *, physical_tip_confirmed: bool) -> dict[str, bool]:
+        """Restore software attachment state without moving hardware.
+
+        Args:
+            physical_tip_confirmed: Must be true after direct operator confirmation.
+
+        Returns:
+            Dictionary containing the reconciled software tip state.
+
+        Raises:
+            ValueError: If explicit physical confirmation is absent.
+        """
+        if physical_tip_confirmed is not True:
+            raise ValueError("physical_tip_confirmed must be true")
+        self.pipette.set_tip_attached(attached=True)
+        return {"tip_attached": True}
+
+    @command
+    @safety(
         summary='Moves down onto a tiprack well to pick up a tip.',
         hazards=['collision'],
         requires='Gantry is homed and a tiprack is loaded in the slot.',
+        confirm=False,
     )
     def attach_tip(self, deck_slot: str, well_name: str):
         """
@@ -322,6 +351,7 @@ class PipQuBotMOF:
         summary='Moves to a well and ejects the attached tip.',
         hazards=['collision', 'dropped tip'],
         requires='A tip is attached and the target is a safe disposal location.',
+        confirm=False,
     )
     def drop_tip(self, *, deck_slot: str, well_name: str, height_from_bottom: float = 0.0):
         """
@@ -363,6 +393,7 @@ class PipQuBotMOF:
         summary='Lowers the tip into a well and draws liquid.',
         hazards=['collision', 'liquid handling'],
         requires='A tip is attached and the labware is loaded.',
+        confirm=False,
     )
     def aspirate_from(self, *, deck_slot: str, well_name: str, amount: int, height_from_bottom: float = 0.0):
         """
@@ -407,6 +438,7 @@ class PipQuBotMOF:
         summary='Lowers the tip into a well and dispenses liquid.',
         hazards=['collision', 'liquid handling'],
         requires='A tip is attached and the labware is loaded.',
+        confirm=False,
     )
     def dispense_to(self, *, deck_slot: str, well_name: str, amount: int, height_from_bottom: float = 0.0):
         """
@@ -450,6 +482,7 @@ class PipQuBotMOF:
     @safety(
         summary='Blows out the pipette.',
         hazards=['liquid spray'],
+        confirm=False,
     )
     def blowout(self, *, return_position: Optional[int] = None):
         """
