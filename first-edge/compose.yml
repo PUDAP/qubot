@@ -5,7 +5,6 @@ services:
       dockerfile: first-edge/Dockerfile
     image: ghcr.io/pudap/first-edge:latest
     container_name: first-edge
-    restart: unless-stopped
     # Mount USB devices for serial communication
     # Note: Device paths should match QUBOT_PORT and SATORIUS_PORT env vars
     devices:
