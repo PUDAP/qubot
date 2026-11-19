@@ -8,7 +8,6 @@ execution via NATS messaging, telemetry publishing, and connection management.
 import asyncio
 import logging
 import sys
-import time
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from puda import EdgeNatsClient, EdgeRunner
@@ -86,14 +85,13 @@ async def main():
     await runner.run()
 
 
-# Run main in a loop; retry on fatal errors, exit gracefully on KeyboardInterrupt.
+# Exit on fatal errors; the supervisor (compose/Docker) owns restarts.
 if __name__ == "__main__":
-    while True:
-        try:
-            asyncio.run(main())
-        except KeyboardInterrupt:
-            logger.warning("Gracefully stopping...")
-            sys.exit(0)
-        except Exception as e:
-            logger.error("Fatal error: %s", e, exc_info=True)
-            time.sleep(5)
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.warning("Gracefully stopping...")
+        sys.exit(0)
+    except Exception:
+        logger.exception("Fatal error; exiting")
+        sys.exit(1)
