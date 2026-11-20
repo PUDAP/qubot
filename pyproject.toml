@@ -1,13 +1,13 @@
 [tool.uv.workspace]
 members = [
-    "first-edge",
-    "capper-edge",
-    "pescador-pipqubot-edge",
-    "pipqubot-mof-edge",
-    "pipqubot-xl-edge",
-    "pipqubot-v3-edge",
-    "miniqubot-edge",
-    "syringequbot-edge",
+    "edges/first",
+    "edges/capper",
+    "edges/pescador",
+    "edges/pipqubot-mof",
+    "edges/pipqubot-xl",
+    "edges/pipqubot-v3",
+    "edges/miniqubot",
+    "edges/syringequbot",
     "driver",
 ]
 
@@ -15,9 +15,9 @@ members = [
 testpaths = [
     "tests",
     "driver/tests",
-    "miniqubot-edge/tests",
-    "pipqubot-mof-edge/tests",
-    "pipqubot-xl-edge/tests",
-    "syringequbot-edge/tests",
+    "edges/miniqubot/tests",
+    "edges/pipqubot-mof/tests",
+    "edges/pipqubot-xl/tests",
+    "edges/syringequbot/tests",
 ]
 norecursedirs = ["examples", ".venv", "dist", "build"]

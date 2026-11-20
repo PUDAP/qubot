@@ -10,12 +10,12 @@ RUN apt-get update && apt-get install -y \
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock ./
-COPY miniqubot-edge/ ./miniqubot-edge/
+COPY edges/miniqubot/ ./edges/miniqubot/
 COPY driver/ ./driver/
 
-WORKDIR /app/miniqubot-edge
+WORKDIR /app/edges/miniqubot
 RUN uv sync --frozen --no-dev --no-install-project --package miniqubot-edge
 
-ENV PYTHONPATH=/app/miniqubot-edge:/app/driver/src \
+ENV PYTHONPATH=/app/edges/miniqubot:/app/driver/src \
     UV_CACHE_DIR=/tmp/uv-cache
 CMD ["uv", "run", "--frozen", "--no-sync", "python", "main.py"]

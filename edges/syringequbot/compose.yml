@@ -1,8 +1,10 @@
+name: syringequbot-edge
+
 services:
   syringequbot:
     build:
-      context: ..
-      dockerfile: syringequbot-edge/Dockerfile
+      context: ../..
+      dockerfile: edges/syringequbot/Dockerfile
     image: ghcr.io/pudap/syringequbot-edge:latest
     container_name: syringequbot-edge
     restart: unless-stopped
@@ -14,7 +16,7 @@ services:
       PUDA_NATS_CA: "${PUDA_NATS_CA:+/run/puda-ca/ca.pem}"
       PUDA_E2E_KEY_FILE: "${PUDA_E2E_KEY_FILE:+/run/puda-key/e2e.key}"
     volumes:
-      - ./.env:/app/syringequbot-edge/.env:ro
+      - ./.env:/app/edges/syringequbot/.env:ro
       - type: bind
         source: ${PUDA_NATS_CA:-/dev/null}
         target: /run/puda-ca/ca.pem

@@ -5,9 +5,13 @@ WORKDIR /app
 # Enable bytecode compilation
 ENV UV_COMPILE_BYTECODE=1
 
-# Install system dependencies for building Python packages
+# Install system dependencies for USB/serial device access, building Python packages, and OpenCV
 RUN apt-get update && apt-get install -y \
   build-essential \
+  udev \
+  libgl1-mesa-glx \
+  libglib2.0-0 \
+  libgomp1 \
   && rm -rf /var/lib/apt/lists/*
 
 # Install uv for Python package management
@@ -16,13 +20,14 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock ./
 
 # Copy the workspace packages
-COPY capper-edge/ ./capper-edge/
+COPY edges/first/ ./edges/first/
 COPY driver/ ./driver/
 
 # Install dependencies using uv only for this package
-WORKDIR /app/capper-edge
-RUN uv sync --frozen --no-dev --no-install-project --package capper-edge
+WORKDIR /app/edges/first
+RUN uv sync --frozen --no-dev --no-install-project --package first-edge
 
-ENV PYTHONPATH=/app/capper-edge:/app/driver/src
+ENV PYTHONPATH=/app/edges/first:/app/driver/src
 
 CMD ["uv", "run", "--frozen", "--no-sync", "python", "main.py"]
+

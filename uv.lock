@@ -27,7 +27,7 @@ wheels = [
 [[package]]
 name = "capper-edge"
 version = "0.1.0"
-source = { virtual = "capper-edge" }
+source = { virtual = "edges/capper" }
 dependencies = [
     { name = "puda" },
     { name = "pydantic" },
@@ -179,7 +179,7 @@ wheels = [
 [[package]]
 name = "first-edge"
 version = "0.1.0"
-source = { virtual = "first-edge" }
+source = { virtual = "edges/first" }
 dependencies = [
     { name = "puda" },
     { name = "pydantic" },
@@ -209,7 +209,7 @@ wheels = [
 [[package]]
 name = "miniqubot-edge"
 version = "0.1.0"
-source = { virtual = "miniqubot-edge" }
+source = { virtual = "edges/miniqubot" }
 dependencies = [
     { name = "puda" },
     { name = "pydantic" },
@@ -295,7 +295,7 @@ wheels = [
 [[package]]
 name = "pescador-pipqubot-edge"
 version = "0.1.0"
-source = { virtual = "pescador-pipqubot-edge" }
+source = { virtual = "edges/pescador" }
 dependencies = [
     { name = "puda" },
     { name = "pydantic" },
@@ -316,7 +316,7 @@ requires-dist = [
 [[package]]
 name = "pipqubot-mof-edge"
 version = "0.1.0"
-source = { virtual = "pipqubot-mof-edge" }
+source = { virtual = "edges/pipqubot-mof" }
 dependencies = [
     { name = "puda" },
     { name = "pydantic" },
@@ -337,7 +337,7 @@ requires-dist = [
 [[package]]
 name = "pipqubot-v3-edge"
 version = "0.1.0"
-source = { virtual = "pipqubot-v3-edge" }
+source = { virtual = "edges/pipqubot-v3" }
 dependencies = [
     { name = "qubot-drivers" },
 ]
@@ -348,7 +348,7 @@ requires-dist = [{ name = "qubot-drivers", editable = "driver" }]
 [[package]]
 name = "pipqubot-xl-edge"
 version = "0.1.0"
-source = { virtual = "pipqubot-xl-edge" }
+source = { virtual = "edges/pipqubot-xl" }
 dependencies = [
     { name = "puda" },
     { name = "pydantic-settings" },
@@ -562,7 +562,7 @@ dev = [{ name = "pytest", specifier = ">=9.0.2" }]
 [[package]]
 name = "syringequbot-edge"
 version = "0.1.0"
-source = { virtual = "syringequbot-edge" }
+source = { virtual = "edges/syringequbot" }
 dependencies = [
     { name = "puda" },
     { name = "pydantic" },

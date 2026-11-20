@@ -1,15 +1,17 @@
+name: pescador-pipqubot-edge
+
 services:
   pescador-pipqubot:
     build:
-      context: ..
-      dockerfile: pescador-pipqubot-edge/Dockerfile
+      context: ../..
+      dockerfile: edges/pescador/Dockerfile
     image: ghcr.io/pudap/pescador-pipqubot-edge:latest
     container_name: pescador-pipqubot-edge
     restart: unless-stopped
     devices:
       - ${SATORIUS_PORT:-/dev/ttyUSB0}:${SATORIUS_PORT:-/dev/ttyUSB0}
     volumes:
-      - ./.env:/app/pescador-pipqubot-edge/.env:ro
+      - ./.env:/app/edges/pescador/.env:ro
     healthcheck:
       test: ["CMD", "uv", "run", "python", "-c", "import sys; sys.exit(0)"]
       interval: 30s

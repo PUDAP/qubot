@@ -3,8 +3,8 @@ name: miniqubot-edge
 services:
   miniqubot-edge:
     build:
-      context: ..
-      dockerfile: miniqubot-edge/Dockerfile
+      context: ../..
+      dockerfile: edges/miniqubot/Dockerfile
     image: ghcr.io/pudap/miniqubot-edge:0.1.0
     container_name: miniqubot-edge
     restart: unless-stopped

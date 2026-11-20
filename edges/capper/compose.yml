@@ -1,8 +1,10 @@
+name: capper-edge
+
 services:
   capper:
     build:
-      context: ..
-      dockerfile: capper-edge/Dockerfile
+      context: ../..
+      dockerfile: edges/capper/Dockerfile
     image: ghcr.io/pudap/capper-edge:latest
     container_name: capper-edge
     # Required so the requested localhost NATS URLs resolve to the host broker.
@@ -10,7 +12,7 @@ services:
     restart: unless-stopped
     # Mount host .env so config updates apply after recreate (see main.py Config).
     volumes:
-      - ./.env:/app/capper-edge/.env:ro
+      - ./.env:/app/edges/capper/.env:ro
     healthcheck:
       test: ["CMD", "uv", "run", "python", "-c", "import sys; sys.exit(0)"]
       interval: 30s

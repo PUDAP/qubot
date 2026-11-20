@@ -1,8 +1,10 @@
+name: first-edge
+
 services:
   first:
     build:
-      context: ..
-      dockerfile: first-edge/Dockerfile
+      context: ../..
+      dockerfile: edges/first/Dockerfile
     image: ghcr.io/pudap/first-edge:latest
     container_name: first-edge
     # Mount USB devices for serial communication
@@ -13,7 +15,7 @@ services:
     # Mount host .env so config updates apply after recreate (see main.py Config).
     # Compose still reads this file for ${QUBOT_PORT} / ${SATORIUS_PORT} substitution above.
     volumes:
-      - ./.env:/app/first-edge/.env:ro
+      - ./.env:/app/edges/first/.env:ro
       - /home/puda/.config/puda/e2e:/run/puda-e2e:ro
     environment:
       PUDA_NATS_CA: /run/puda-e2e/ca.pem

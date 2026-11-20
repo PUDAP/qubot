@@ -10,15 +10,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 EDGE_MODULES = {
-    "_first_edge_driver": ("first-edge", "driver.py"),
-    "_capper_edge_driver": ("capper-edge", "driver.py"),
-    "_miniqubot_edge_driver": ("miniqubot-edge", "driver.py"),
-    "_pescador_edge_driver": ("pescador-pipqubot-edge", "driver.py"),
-    "_pescador_edge_variant": ("pescador-pipqubot-edge", "pescador.py"),
-    "_pipqubot_mof_edge_driver": ("pipqubot-mof-edge", "driver.py"),
-    "_pipqubot_xl_edge_driver": ("pipqubot-xl-edge", "driver.py"),
-    "_syringequbot_edge_driver": ("syringequbot-edge", "driver.py"),
-    "_pipqubot_v3_edge_driver": ("pipqubot-v3-edge", "driver.py"),
+    "_first_edge_driver": ("edges/first", "driver.py"),
+    "_capper_edge_driver": ("edges/capper", "driver.py"),
+    "_miniqubot_edge_driver": ("edges/miniqubot", "driver.py"),
+    "_pescador_edge_driver": ("edges/pescador", "driver.py"),
+    "_pescador_edge_variant": ("edges/pescador", "pescador.py"),
+    "_pipqubot_mof_edge_driver": ("edges/pipqubot-mof", "driver.py"),
+    "_pipqubot_xl_edge_driver": ("edges/pipqubot-xl", "driver.py"),
+    "_syringequbot_edge_driver": ("edges/syringequbot", "driver.py"),
+    "_pipqubot_v3_edge_driver": ("edges/pipqubot-v3", "driver.py"),
 }
 
 for alias, (folder, filename) in EDGE_MODULES.items():

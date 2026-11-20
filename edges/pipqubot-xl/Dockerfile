@@ -10,11 +10,11 @@ RUN apt-get update && apt-get install -y \
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock ./
-COPY pipqubot-xl-edge/ ./pipqubot-xl-edge/
+COPY edges/pipqubot-xl/ ./edges/pipqubot-xl/
 COPY driver/ ./driver/
 
-WORKDIR /app/pipqubot-xl-edge
+WORKDIR /app/edges/pipqubot-xl
 RUN uv sync --frozen --no-dev --no-install-project --package pipqubot-xl-edge
 
-ENV PYTHONPATH=/app/pipqubot-xl-edge:/app/driver/src
+ENV PYTHONPATH=/app/edges/pipqubot-xl:/app/driver/src
 CMD ["uv", "run", "--frozen", "--no-sync", "python", "main.py"]

@@ -1,4 +1,4 @@
-"""Offline regression checks for flat machine ownership and safe imports."""
+"""Offline regression checks for edge ownership and safe imports."""
 
 import ast
 import importlib
@@ -11,15 +11,15 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 OWNERS = [
-    ("first-edge", "_first_edge_driver", "driver.py", "First"),
-    ("capper-edge", "_capper_edge_driver", "driver.py", "Capper"),
-    ("miniqubot-edge", "_miniqubot_edge_driver", "driver.py", "MiniQubot"),
-    ("pescador-pipqubot-edge", "_pescador_edge_driver", "driver.py", "Pipette"),
-    ("pescador-pipqubot-edge", "_pescador_edge_variant", "pescador.py", "Pescador"),
-    ("pipqubot-mof-edge", "_pipqubot_mof_edge_driver", "driver.py", "PipQuBotMOF"),
-    ("pipqubot-xl-edge", "_pipqubot_xl_edge_driver", "driver.py", "PipQuBotXL"),
-    ("syringequbot-edge", "_syringequbot_edge_driver", "driver.py", "SyringeQubot"),
-    ("pipqubot-v3-edge", "_pipqubot_v3_edge_driver", "driver.py", "PipQuBotV3"),
+    ("edges/first", "_first_edge_driver", "driver.py", "First"),
+    ("edges/capper", "_capper_edge_driver", "driver.py", "Capper"),
+    ("edges/miniqubot", "_miniqubot_edge_driver", "driver.py", "MiniQubot"),
+    ("edges/pescador", "_pescador_edge_driver", "driver.py", "Pipette"),
+    ("edges/pescador", "_pescador_edge_variant", "pescador.py", "Pescador"),
+    ("edges/pipqubot-mof", "_pipqubot_mof_edge_driver", "driver.py", "PipQuBotMOF"),
+    ("edges/pipqubot-xl", "_pipqubot_xl_edge_driver", "driver.py", "PipQuBotXL"),
+    ("edges/syringequbot", "_syringequbot_edge_driver", "driver.py", "SyringeQubot"),
+    ("edges/pipqubot-v3", "_pipqubot_v3_edge_driver", "driver.py", "PipQuBotV3"),
 ]
 
 
@@ -93,7 +93,7 @@ with patch.object(serial, "Serial", forbidden), \\
     assert "Safe adjacent driver/entrypoint imports" in result.stdout
 
 
-@pytest.mark.parametrize("folder", sorted({owner[0] for owner in OWNERS} - {"pipqubot-v3-edge"}))
+@pytest.mark.parametrize("folder", sorted({owner[0] for owner in OWNERS} - {"edges/pipqubot-v3"}))
 def test_entrypoint_imports_adjacent_driver(folder):
     tree = ast.parse((ROOT / folder / "main.py").read_text())
     assert any(isinstance(node, ast.ImportFrom) and node.module == "driver" for node in ast.walk(tree))
