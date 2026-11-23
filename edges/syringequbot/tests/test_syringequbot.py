@@ -149,4 +149,8 @@ def test_advertised_commands_are_motion_only():
         "shutdown",
     }
     for method in (machine.home, machine.move_to, machine.safe_move_to, machine.reset):
-        assert get_safety(method).confirm is True
+        safety = get_safety(method)
+        assert safety is not None
+        assert "collision" in safety.hazards
+        assert safety.requires and safety.forbidden_when
+        assert safety.confirm is False

@@ -28,7 +28,7 @@ class Config(BaseSettings):
     nats_servers: str
     qubot_ip: str
     satorius_port: str
-    home_gantry_on_startup: bool = True
+    home_gantry_on_startup: bool = False
     initialize_pipette_on_startup: bool = True
 
     model_config = SettingsConfigDict(
