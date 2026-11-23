@@ -1,0 +1,31 @@
+from rline_50_1000 import RLineModel
+
+
+def test_mof_driver_has_distinct_class_identity():
+    from _pipqubot_mof_edge_driver import PipQuBotMOF
+
+    assert PipQuBotMOF.__name__ == "PipQuBotMOF"
+    assert PipQuBotMOF.__module__ == "_pipqubot_mof_edge_driver"
+
+
+def test_mof_uses_50_1000_rline_model(monkeypatch):
+    import _pipqubot_mof_edge_driver as module
+
+    class FakeQubot:
+        def __init__(self, **kwargs):
+            pass
+
+        def set_axis_limits(self, *args):
+            pass
+
+    class FakePipette:
+        def __init__(self, **kwargs):
+            self.model = kwargs.get("model")
+
+    monkeypatch.setattr(module, "GrblHALController", FakeQubot)
+    monkeypatch.setattr(module, "SatoriusController", FakePipette)
+
+    machine = module.PipQuBotMOF(qubot_port="qubot", satorius_port="pipette")
+
+    assert machine.PIPETTE_MODEL is RLineModel.UL_50_1000
+    assert machine.pipette.model is RLineModel.UL_50_1000

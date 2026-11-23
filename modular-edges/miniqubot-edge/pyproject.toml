@@ -1,0 +1,21 @@
+[project]
+name = "miniqubot-edge"
+version = "0.1.0"
+description = "PUDA edge service for the empty-head MiniQubot"
+requires-python = ">=3.14"
+dependencies = [
+    "gantry-001-1unit-grbl-serial",
+    "qubot-geometry",
+    "qubot-edgekit",
+    "puda>=0.0.23",
+    "pydantic>=2.12.5",
+    "pydantic-settings>=2.12.0",
+    "python-dotenv>=1.2.1",
+]
+
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+package = false

@@ -1,0 +1,78 @@
+# Version 1. Homes on startup. confirm=true only for reconcile_tip_attached.
+# Original contract baseline: PUDA CLI 0.1.5 and Python SDK 0.0.21.
+# The current SDK dependency is specified in pyproject.toml and the workspace lock.
+# Connection values stay in the local .env. This file has no host address.
+
+version = "1"
+machine_id = "pipqubot_mof"
+existing_edge = "pipqubot-mof-edge"
+gantry = "003-2unit-grbl-serial"
+effectors = ["rline-50-1000"]
+home_on_startup = true
+initialize_pipette_on_startup = true
+advertise_deck = true
+syringe_length_mm = 0
+soft_limits = "none"
+
+[commands.home]
+summary = "Homes the gantry into its limit switches and re-initializes the pipette; the gantry can collide."
+hazards = ["collision", "lost-steps"]
+requires = "Deck is clear and the motor-power cutoff is reachable."
+forbidden_when = "Do not home while a person is in the workspace."
+confirm = false
+
+[commands.move_to_well]
+summary = "Moves the gantry to the top of a labware well."
+hazards = ["collision"]
+requires = "Gantry is homed and labware is loaded in the slot."
+forbidden_when = "Do not move while a person is in the workspace."
+confirm = false
+
+[commands.move_z_relative]
+summary = "Moves only the Z axis by a signed distance."
+hazards = ["collision"]
+requires = "Gantry is homed and nothing is in the Z path."
+forbidden_when = "Do not move while a person is in the workspace."
+confirm = false
+
+[commands.reconcile_tip_attached]
+summary = "Reconciles software tip state with an operator-confirmed attached physical tip after an edge restart."
+hazards = ["physical/software tip-state mismatch"]
+requires = "The operator has freshly confirmed that exactly one disposable tip is physically attached and the tip contains no liquid."
+forbidden_when = "Do not reconcile if tip attachment or retained liquid is uncertain."
+confirm = true
+
+[commands.attach_tip]
+summary = "Moves down onto a tiprack well to pick up a tip."
+hazards = ["collision"]
+requires = "Gantry is homed and a tiprack is loaded in the slot."
+forbidden_when = "Do not move while a person is in the workspace."
+confirm = false
+
+[commands.drop_tip]
+summary = "Moves to a well and ejects the attached tip."
+hazards = ["collision", "dropped tip"]
+requires = "A tip is attached and the target is a safe disposal location."
+forbidden_when = "Do not drop a tip over occupied labware."
+confirm = false
+
+[commands.aspirate_from]
+summary = "Lowers the tip into a well and draws liquid."
+hazards = ["collision", "liquid handling"]
+requires = "A tip is attached and the labware is loaded."
+forbidden_when = "Do not aspirate while a person is in the workspace."
+confirm = false
+
+[commands.dispense_to]
+summary = "Lowers the tip into a well and dispenses liquid."
+hazards = ["collision", "liquid handling"]
+requires = "A tip is attached and the labware is loaded."
+forbidden_when = "Do not dispense while a person is in the workspace."
+confirm = false
+
+[commands.blowout]
+summary = "Blows out the pipette."
+hazards = ["liquid spray"]
+requires = "A tip is attached."
+forbidden_when = "Do not blow out toward a person."
+confirm = false

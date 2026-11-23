@@ -1,0 +1,33 @@
+# Version 1. Safety and homing match the miniqubot class in the latest qubot edge images. Startup homes.
+# Connection values stay in the local .env. This file has no host address.
+
+version = "1"
+machine_id = "miniqubot"
+existing_edge = "miniqubot-edge"
+gantry = "001-1unit-grbl-serial"
+effectors = []
+home_on_startup = true
+advertise_deck = false
+syringe_length_mm = 0
+soft_limits = "none"
+
+[commands.home]
+summary = "Homing drives every axis into its limit switch and can collide. The controller reports no lost-step feedback."
+hazards = ["collision", "lost-steps"]
+requires = "Keep the motor-power cutoff reachable."
+forbidden_when = "Do not home while the controller is disconnected or busy."
+confirm = false
+
+[commands.move_absolute]
+summary = "Absolute XYZ motion can collide. The controller reports no lost-step feedback."
+hazards = ["collision", "lost-steps"]
+requires = "Home in this connection and keep the motor-power cutoff reachable."
+forbidden_when = "Do not move while the controller is disconnected, alarmed, or busy."
+confirm = false
+
+[commands.move_relative]
+summary = "Relative XYZ motion can collide. The controller reports no lost-step feedback."
+hazards = ["collision", "lost-steps"]
+requires = "Home in this connection and keep the motor-power cutoff reachable."
+forbidden_when = "Do not move while the controller is disconnected, alarmed, or busy."
+confirm = false
