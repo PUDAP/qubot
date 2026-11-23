@@ -1,0 +1,33 @@
+# Unset on purpose. The edge contract fills these.
+home_on_startup = ""
+
+[commands.reconcile_tip_attached]
+summary = ""
+hazards = []
+requires = ""
+forbidden_when = ""
+confirm = ""
+
+
+[commands.dispense_to_proxy_vial]
+summary = ""
+hazards = []
+requires = ""
+forbidden_when = ""
+confirm = ""
+
+
+[commands.move_capper]
+summary = ""
+hazards = []
+requires = ""
+forbidden_when = ""
+confirm = ""
+
+
+[commands.move_to_well]
+summary = ""
+hazards = []
+requires = ""
+forbidden_when = ""
+confirm = ""

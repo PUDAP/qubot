@@ -1,9 +1,8 @@
-# Keep local config out of the image; Compose injects it at container start.
-.env
-**/.env
-!.env.example
 .git
 .venv
 **/__pycache__
 **/.pytest_cache
-driver/docs/
+**/*.pyc
+.env
+**/.env
+!.env.example

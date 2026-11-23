@@ -1,0 +1,20 @@
+[project]
+name = "gantry-003-2unit-grbl-serial"
+version = "0.1.0"
+description = "2unit grbl-serial gantry 003."
+requires-python = ">=3.10"
+dependencies = [
+    "qubot-geometry",
+    "pyserial~=3.5",
+]
+
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "src/gantry_003",
+]

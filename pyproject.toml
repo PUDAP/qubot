@@ -1,23 +1,36 @@
+[project]
+name = "qubot"
+version = "0.1.0"
+description = "Deployment-independent Qubot gantry and end-effector packages."
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.uv]
+package = false
+
 [tool.uv.workspace]
 members = [
-    "edges/first",
-    "edges/capper",
-    "edges/pescador",
-    "edges/pipqubot-mof",
-    "edges/pipqubot-xl",
-    "edges/pipqubot-v3",
-    "edges/miniqubot",
-    "edges/syringequbot",
-    "driver",
+    "packages/qubot-geometry",
+    "packages/qubot-edgekit",
+    "gantries/001-1unit-grbl-serial",
+    "gantries/002-1unit-reprap-http",
+    "gantries/003-2unit-grbl-serial",
+    "gantries/004-4unit-reprap-http",
+    "gantries/005-8unit-grblhal-serial",
+    "gantries/006-1unit-grblhal-serial",
+    "gantries/007-2unit-grblhal-serial",
+    "gantries/008-1unit-grblhal-serial",
+    "gantries/009-1unit-grblhal-serial",
+    "end-effectors/rline-50-1000",
+    "end-effectors/a-axis-capper",
+    "end-effectors/autosampler-syringe",
 ]
 
+[dependency-groups]
+dev = ["pytest>=9.0.2"]
+
+[tool.uv.sources]
+qubot-geometry = { workspace = true }
+
 [tool.pytest.ini_options]
-testpaths = [
-    "tests",
-    "driver/tests",
-    "edges/miniqubot/tests",
-    "edges/pipqubot-mof/tests",
-    "edges/pipqubot-xl/tests",
-    "edges/syringequbot/tests",
-]
-norecursedirs = ["examples", ".venv", "dist", "build"]
+testpaths = ["end-effectors/autosampler-syringe/tests"]
