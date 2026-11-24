@@ -26,6 +26,7 @@ members = [
     "end-effectors/autosampler-syringe",
     "end-effectors/rotating-vacuum-gripper",
     "end-effectors/vacuum-chamber",
+    "end-effectors/orion-4ch-led",
 ]
 
 [dependency-groups]
@@ -39,4 +40,5 @@ testpaths = [
     "end-effectors/autosampler-syringe/tests",
     "end-effectors/rotating-vacuum-gripper/tests",
     "end-effectors/vacuum-chamber/tests",
+    "end-effectors/orion-4ch-led/tests",
 ]
