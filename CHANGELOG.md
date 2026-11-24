@@ -9,6 +9,7 @@ Ingredient, geometry, edgekit, and contract-template changes are recorded here. 
 - `vacuum-chamber`: dancefloor valve and lid waypoints. Loading X=−118 stays outside gantry `006` until the −119 versus −116 limit is confirmed. Gantry `006` can feed-hold the same way.
 - Gantry `007` can feed-hold without taking the command lock. `move_relative` accepts `apply_safe_z`. The PESCador pipette reuses `rline-50-1000`.
 - `orion-4ch-led`: four-channel LED line on one 9600 baud port. The reply is not parsed. Gantry `008` can feed-hold without taking the command lock.
+- `parallel-force-actuator`: four serial actuators. Force-threshold stops stay disabled until an edge contract names the threshold unit. Gantry `009` can feed-hold without taking the command lock.
 
 ## 2026-11-23
 

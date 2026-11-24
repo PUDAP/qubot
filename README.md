@@ -54,6 +54,7 @@ python3 scripts/attach_toolhead.py path/to/edge a-axis-capper
 | `rotating-vacuum-gripper` | PESCador claw. Vacuum and yaw share the gantry port. |
 | `vacuum-chamber` | PESCador dancefloor. Valve and lid waypoints share the gantry port. |
 | `orion-4ch-led` | PESCador photoreactor. Four channels, one serial port. |
+| `parallel-force-actuator` | PESCador EIS station. Four serial actuators. |
 
 ## Offline checks
 
