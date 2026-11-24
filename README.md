@@ -9,7 +9,7 @@ Gantry and end-effector packages for building a PUDA qubot edge. Nothing in this
 - Gantry directories are `{serial}-{size}-{bus}`. Serials `001` to `004` are provisional labels for the first build, not recorded asset tags. `005` to `009` continue from the gantry limits file. `005` is 8 units, arranged 2 along Y by 4 along X.
 - Each gantry `placeholders.toml` leaves safety, confirm, and startup homing unset. The edge contract fills them.
 - Each gantry has a default deck of one 2x2 block per unit. Calibrated holder positions belong to the site edge.
-- Finished edges are not stored on `main`. Older finished edges remain on the `legacy-edges` branch.
+- Finished edges are not stored on `main`. For an edge built before the qubot modularization and the monorepo restructuring, use the `legacy-edges` branch.
 
 ## Build a site edge
 
