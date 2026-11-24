@@ -338,6 +338,20 @@ class GrblHALController(SerialController):
             raw=raw,
         )
 
+    def halt(self) -> None:
+        """Send GRBL realtime feed-hold ``!`` without waiting for the command lock.
+
+        ``!`` is one byte and does not use the ``ok`` exchange. Emergency stop
+        calls this while another command may still be inside ``execute``.
+        """
+        port = self._serial
+        if port is None or not getattr(port, "is_open", False):
+            raise RuntimeError(
+                "GRBL serial port is not open. The controller may still be moving."
+            )
+        port.write(b"!")
+        port.flush()
+
     def home(self, axis: Optional[str] = None, *, verify_origin: bool = False) -> None:
         """
         Home one or all axes ($H command).
@@ -441,6 +455,8 @@ class GrblHALController(SerialController):
         self,
         position: Position,
         feed: Optional[int] = None,
+        *,
+        apply_safe_z: bool = True,
     ) -> Position:
         """
         Move relative to the current position (converted to absolute move internally).
@@ -490,7 +506,8 @@ class GrblHALController(SerialController):
 
         return self._execute_move(
             position=abs_position,
-            feed=feed_rate
+            feed=feed_rate,
+            apply_safe_z=apply_safe_z,
         )
 
     def _execute_move(

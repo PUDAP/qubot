@@ -7,6 +7,7 @@ Ingredient, geometry, edgekit, and contract-template changes are recorded here. 
 - `rotating-vacuum-gripper`: claw vacuum cup and yaw servo on the gantry port. Intermediate yaw uses linear interpolation between the three calibrated pulses.
 - Gantry `005` homes Z, then X, then Y, and can feed-hold with realtime `!` without taking the command lock. `move_relative` accepts `apply_safe_z`.
 - `vacuum-chamber`: dancefloor valve and lid waypoints. Loading X=−118 stays outside gantry `006` until the −119 versus −116 limit is confirmed. Gantry `006` can feed-hold the same way.
+- Gantry `007` can feed-hold without taking the command lock. `move_relative` accepts `apply_safe_z`. The PESCador pipette reuses `rline-50-1000`.
 
 ## 2026-11-23
 
