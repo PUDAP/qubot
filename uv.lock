@@ -19,6 +19,7 @@ members = [
     "qubot-edgekit",
     "qubot-geometry",
     "rline-50-1000",
+    "rotating-vacuum-gripper",
 ]
 
 [[package]]
@@ -287,6 +288,11 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "pyserial", specifier = "~=3.5" }]
+
+[[package]]
+name = "rotating-vacuum-gripper"
+version = "0.1.0"
+source = { editable = "end-effectors/rotating-vacuum-gripper" }
 
 [[package]]
 name = "tomli"

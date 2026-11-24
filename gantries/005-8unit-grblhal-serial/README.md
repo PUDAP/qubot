@@ -6,4 +6,6 @@ Serial `005`, 8unit, grblHAL. The frame is 2 by 4 units: 2 along Y and 4 along X
 
 Frame travel is X 0 to 830, Y −280 to 0, Z −240 to 0. One unit may travel at most 300 mm on X and on Y, so this frame may travel 1200 mm on X and 600 mm on Y. The uploaded spans are 830 mm and 280 mm, both inside that allowance.
 
-Safety text, confirm, and startup homing are placeholders filled by the edge contract.
+Homing for this frame is Z, then X, then Y. The transport line ending remains CR. A claw configuration set CR LF; that conflict stays in the edge contract.
+
+Safety text, confirm, and startup homing are placeholders filled by the edge contract. The serial controller can feed-hold with realtime `!` without taking the command lock.

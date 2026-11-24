@@ -51,6 +51,7 @@ python3 scripts/attach_toolhead.py path/to/edge a-axis-capper
 | `rline-50-1000` | pipqubot-mof, then pipqubot-xl |
 | `a-axis-capper` | pipqubot-xl |
 | `autosampler-syringe` | syringequbot |
+| `rotating-vacuum-gripper` | PESCador claw. Vacuum and yaw share the gantry port. |
 
 ## Offline checks
 

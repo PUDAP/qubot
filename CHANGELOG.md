@@ -2,6 +2,11 @@
 
 Ingredient, geometry, edgekit, and contract-template changes are recorded here. A site edge does not append to this file. `scripts/vendor_edge.py` records the commit it copied in that edge's `vendor/REVISION`.
 
+## 2026-11-24
+
+- `rotating-vacuum-gripper`: claw vacuum cup and yaw servo on the gantry port. Intermediate yaw uses linear interpolation between the three calibrated pulses.
+- Gantry `005` homes Z, then X, then Y, and can feed-hold with realtime `!` without taking the command lock. `move_relative` accepts `apply_safe_z`.
+
 ## 2026-11-23
 
 `main` keeps gantries, end effectors, transport families, geometry, and the edge kit. Finished edges are not stored on `main`. The previous edge tree remains on `legacy-edges`. A site edge is one directory under that site's `edges/`. [docs/building-an-edge.md](docs/building-an-edge.md) is the build reference.

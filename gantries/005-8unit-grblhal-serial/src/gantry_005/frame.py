@@ -14,6 +14,8 @@ HARDWARE_LIMITS = {
     "Z": (-240, 0),
 }
 DEFAULT_DECK = {"rows": 4, "cols": 8}
+# ClawMachine homes Z, then X, then Y. One $H is not the procedure for this frame.
+HOME_ORDER = ("Z", "X", "Y")
 
 
 def slot_names(rows: int, cols: int) -> list[str]:

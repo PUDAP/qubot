@@ -24,6 +24,7 @@ members = [
     "end-effectors/rline-50-1000",
     "end-effectors/a-axis-capper",
     "end-effectors/autosampler-syringe",
+    "end-effectors/rotating-vacuum-gripper",
 ]
 
 [dependency-groups]
@@ -33,4 +34,7 @@ dev = ["pytest>=9.0.2"]
 qubot-geometry = { workspace = true }
 
 [tool.pytest.ini_options]
-testpaths = ["end-effectors/autosampler-syringe/tests"]
+testpaths = [
+    "end-effectors/autosampler-syringe/tests",
+    "end-effectors/rotating-vacuum-gripper/tests",
+]
