@@ -25,6 +25,7 @@ members = [
     "end-effectors/a-axis-capper",
     "end-effectors/autosampler-syringe",
     "end-effectors/rotating-vacuum-gripper",
+    "end-effectors/vacuum-chamber",
 ]
 
 [dependency-groups]
@@ -37,4 +38,5 @@ qubot-geometry = { workspace = true }
 testpaths = [
     "end-effectors/autosampler-syringe/tests",
     "end-effectors/rotating-vacuum-gripper/tests",
+    "end-effectors/vacuum-chamber/tests",
 ]

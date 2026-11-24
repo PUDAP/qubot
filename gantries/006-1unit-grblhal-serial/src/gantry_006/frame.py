@@ -13,6 +13,12 @@ HARDWARE_LIMITS = {
     "Z": (0, 0),
 }
 DEFAULT_DECK = {"rows": 2, "cols": 2}
+# pescador2 says X low is -119. The loading position X=-118 needs that wider span.
+# This frame keeps the dancefloor-alone value -116 until that conflict is confirmed.
+LIMITS_CONFLICT = (
+    "pescador2 config X low is -119. This frame keeps the dancefloor-alone value -116. "
+    "The chamber loading position X=-118 is outside this frame until the limit is confirmed."
+)
 
 
 def slot_names(rows: int, cols: int) -> list[str]:
