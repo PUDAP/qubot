@@ -24,6 +24,45 @@ def load_module(path: Path, name: str):
     return module
 
 
+def _check_rline_50_1000(label: str, contract: dict, effector: str, errors: list[str]) -> None:
+    package = effector.replace("-", "_")
+    path = ROOT / "end-effectors" / effector / "src" / package / "rline.py"
+    if not path.is_file():
+        errors.append(f"{label}: {effector} is missing {path}")
+        return
+    pipette = load_module(path, f"rline_catalog_{package}")
+    model = pipette.RLineModel.UL_50_1000
+    spec = pipette.RLINE_SPECS[model]
+    if (
+        model.value != "50-1000"
+        or spec.minimum_volume_ul != 50
+        or spec.maximum_volume_ul != 1000
+    ):
+        errors.append(f"{label}: {effector} volume range is not 50-1000 uL")
+    if spec.microliters_per_step != 2.5:
+        errors.append(f"{label}: {effector} is not 2.5 uL per step")
+    if effector != "rline-50-1000-multistep":
+        return
+    if pipette.SELECTED_MODEL is not model:
+        errors.append(f"{label}: {effector} is not locked to the 50-1000 body")
+    body = contract.get("effector", {}).get(effector)
+    if not isinstance(body, dict):
+        errors.append(f"{label}: {effector} contract block is missing")
+        return
+    if body.get("model") != "50-1000":
+        errors.append(f"{label}: {effector} model is not 50-1000")
+    if body.get("minimum_volume_ul") != 50 or body.get("maximum_volume_ul") != 1000:
+        errors.append(f"{label}: {effector} contract volume range is not 50-1000 uL")
+    if body.get("microliters_per_step") != 2.5:
+        errors.append(f"{label}: {effector} contract step size is not 2.5 uL")
+    step = body.get("step_resolution")
+    if isinstance(step, bool) or not isinstance(step, int) or step < 1:
+        errors.append(f"{label}: {effector} step_resolution must be a positive integer")
+    response = body.get("response_time_s")
+    if isinstance(response, bool) or not isinstance(response, (int, float)) or response <= 0:
+        errors.append(f"{label}: {effector} response_time_s must be positive")
+
+
 def check_files(paths: list[Path], errors: list[str]) -> None:
     if not paths:
         errors.append("pass at least one contract file")
@@ -81,13 +120,9 @@ def _check_one(label: str, contract: dict, errors: list[str]) -> None:
     for effector in effectors:
         if not (ROOT / "end-effectors" / str(effector)).is_dir():
             errors.append(f"{label}: missing effector {effector}")
-    if "rline-50-1000" in effectors:
-        pipette = load_module(
-            ROOT / "end-effectors" / "rline-50-1000" / "src" / "rline_50_1000" / "rline.py",
-            "rline_catalog",
-        )
-        if pipette.RLineModel.UL_50_1000.value != "50-1000":
-            errors.append(f"{label}: pipette model is not 50-1000")
+    for effector in effectors:
+        if effector in {"rline-50-1000", "rline-50-1000-multistep"}:
+            _check_rline_50_1000(label, contract, str(effector), errors)
     limits = dict(frame.HARDWARE_LIMITS)
     if contract.get("soft_limits") not in (None, "none"):
         for axis, bounds in contract["soft_limits"].items():

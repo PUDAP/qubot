@@ -21,6 +21,7 @@ members = [
     "qubot-edgekit",
     "qubot-geometry",
     "rline-50-1000",
+    "rline-50-1000-multistep",
     "rotating-vacuum-gripper",
     "vacuum-chamber",
 ]
@@ -307,6 +308,17 @@ source = { editable = "packages/qubot-geometry" }
 name = "rline-50-1000"
 version = "0.1.0"
 source = { editable = "end-effectors/rline-50-1000" }
+dependencies = [
+    { name = "pyserial" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pyserial", specifier = "~=3.5" }]
+
+[[package]]
+name = "rline-50-1000-multistep"
+version = "0.1.0"
+source = { editable = "end-effectors/rline-50-1000-multistep" }
 dependencies = [
     { name = "pyserial" },
 ]

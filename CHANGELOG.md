@@ -2,6 +2,10 @@
 
 Ingredient, geometry, edgekit, and contract-template changes are recorded here. A site edge does not append to this file. `scripts/vendor_edge.py` records the commit it copied in that edge's `vendor/REVISION`.
 
+## 2026-11-25
+
+- `rline-50-1000-multistep`: 50-1000 µL rLine body that splits a requested aspirate or dispense speed across a faster preset. Step resolution and response time are the calibrated inputs, defaulting to 10 steps and 1.03 s. `rline-50-1000` is unchanged.
+
 ## 2026-11-24
 
 - `rotating-vacuum-gripper`: claw vacuum cup and yaw servo on the gantry port. Intermediate yaw uses linear interpolation between the three calibrated pulses.
