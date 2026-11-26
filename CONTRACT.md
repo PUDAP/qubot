@@ -4,7 +4,7 @@ Read the puda-edge skill and scaffold from
 https://github.com/PUDAP/edge-python-template
 only after every answer below is filled.
 This repository stores the blank form. Start from the matching reference contract in
-`docs/examples/<gantry>.toml`; it carries `[frame]` and `[effector.<name>]` values
+`docs/examples/<machine>.toml`; it carries `[frame]` and `[effector.<name>]` values
 from the machines built so far. The filled contract is saved with the
 site edge, under that edge's `contracts/<version>.toml`.
 `.env.example` stays placeholders. This repository never stores a host `.env`.

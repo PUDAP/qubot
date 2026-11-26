@@ -1,4 +1,4 @@
-# Example contract for gantry 008-1unit-grblhal-serial.
+# Example contract for photoreactor, on gantry 008-1unit-grblhal-serial.
 # Used as: Photoreactor (UV qubot).
 # Reference values only. A site edge copies this to contracts/<version>.toml,
 # fills every blank, and keeps machine_id and the port env names from its

@@ -8,7 +8,7 @@ One Python package, `qubot`, with the gantry and end-effector drivers for buildi
 - `qubot.gantry.Frame` is the frame type. The edge builds it from its contract `[frame]` table: axes, hardware limits, default deck, and optional home order and firmware checks.
 - `qubot.end_effector.<name>` is one toolhead driver. Calibration (servo pulses, waypoints, delays, force corrections, pipette pacing) is passed in by the edge from `[effector.<name>]`.
 - `qubot.geometry` is the shared position, deck, and labware module. `qubot.edgekit` loads a numbered contract and refuses to start an edge until a filled local `.env` exists.
-- [docs/examples/](docs/examples/) has one reference contract per known gantry, `{serial}-{size}-{bus}.toml`, with the frame and calibration values from the machines built so far, and [edge_config.py](docs/examples/edge_config.py) showing how an edge imports and configures qubot from it. Serials `001` to `004` are provisional labels, not recorded asset tags.
+- [docs/examples/](docs/examples/) has one reference contract per known machine, named after the machine (`claw-machine.toml`, `pipqubot-xl.toml`, …), with the frame and calibration values from the machines built so far, and [edge_config.py](docs/examples/edge_config.py) showing how an edge imports and configures qubot from it. Serials `001` to `004` are provisional labels, not recorded asset tags.
 - Safety text, confirm, and startup homing are blank in the examples. Each edge contract fills them.
 - Finished edges are not stored on `main`. For an edge built before the qubot modularization and the monorepo restructuring, use the `legacy-edges` branch.
 
@@ -45,21 +45,21 @@ python3 scripts/attach_toolhead.py path/to/edge a-axis-capper
 
 `.env.example` is placeholders only. If the user supplies this host's `.env`, copy it with `python3 scripts/accept_host_env.py path/to/edge path/to.env`. Otherwise the edge refuses to start until `.env` exists and its required values are filled.
 
-## Example gantries
+## Example machines
 
 Reference contracts in `docs/examples/`. These are machines, not modules.
 
-| Example | Where it has been used |
-|---|---|
-| `001-1unit-grbl-serial` | miniqubot |
-| `002-1unit-reprap-http` | capper, then syringequbot |
-| `003-2unit-grbl-serial` | pipqubot-mof |
-| `004-4unit-reprap-http` | pipqubot-xl |
-| `005-8unit-grblhal-serial` | Claw machine (Pick-and-place) |
-| `006-1unit-grblhal-serial` | Dancefloor (Vacuum chamber) |
-| `007-2unit-grblhal-serial` | Overkill2 (Liquid handling - pipette gantry) |
-| `008-1unit-grblhal-serial` | Photoreactor (UV qubot) |
-| `009-1unit-grblhal-serial` | EIS Qubot (Electrochemical station) |
+| Example | Gantry | Notes |
+|---|---|---|
+| [`miniqubot.toml`](docs/examples/miniqubot.toml) | `001-1unit-grbl-serial` |  |
+| [`syringequbot.toml`](docs/examples/syringequbot.toml) | `002-1unit-reprap-http` | Same frame was the capper before. |
+| [`pipqubot-mof.toml`](docs/examples/pipqubot-mof.toml) | `003-2unit-grbl-serial` |  |
+| [`pipqubot-xl.toml`](docs/examples/pipqubot-xl.toml) | `004-4unit-reprap-http` |  |
+| [`claw-machine.toml`](docs/examples/claw-machine.toml) | `005-8unit-grblhal-serial` | Pick-and-place. |
+| [`dancefloor.toml`](docs/examples/dancefloor.toml) | `006-1unit-grblhal-serial` | Vacuum chamber. |
+| [`overkill2.toml`](docs/examples/overkill2.toml) | `007-2unit-grblhal-serial` | Liquid handling, pipette gantry. |
+| [`photoreactor.toml`](docs/examples/photoreactor.toml) | `008-1unit-grblhal-serial` | UV qubot. |
+| [`eis-qubot.toml`](docs/examples/eis-qubot.toml) | `009-1unit-grblhal-serial` | Electrochemical station. |
 
 ## End effectors
 

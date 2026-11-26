@@ -6,7 +6,7 @@ Ingredient, geometry, edgekit, and contract-template changes are recorded here. 
 
 - One package, `qubot`, replaces the 18 workspace packages. One root `pyproject.toml`; code is under `src/qubot/`.
 - Imports: `qubot.gantry.grbl`, `qubot.gantry.grbl_ws`, `qubot.gantry.reprap_http`, `qubot.gantry.Frame`, `qubot.end_effector.<name>`, `qubot.geometry`, `qubot.edgekit`. Old names such as `gantry_005`, `rline_50_1000`, and `qubot_geometry` are gone.
-- No machine settings in the package. Gantry frames `001` to `009` and their command placeholders moved to reference contracts in `docs/examples/`, as `[frame]` and `[commands]`. An edge builds `Frame.from_dict(contract["frame"])`.
+- No machine settings in the package. Gantry frames `001` to `009` and their command placeholders moved to reference contracts in `docs/examples/`, one per machine (`claw-machine.toml`, `dancefloor.toml`, …), as `[frame]` and `[commands]`. An edge builds `Frame.from_dict(contract["frame"])`.
 - Effector calibration moved to `[effector.<name>]` in those contracts and is passed in by the edge: `Capper`, `RotatingVacuumGripper`, `Chamber`, `ParallelFingers(corrections=, calibration_factor=)`, and the multistep pipette's `step_resolution` and `response_time_s` (no longer defaulted). `AXIS` and `PORT_ENV` constants are gone; axis and port env names are edge wiring.
 - `check_contract.py` checks `[frame]`, every `[commands.*]`, soft limits against `[frame]`, and builds each calibrated effector from its block.
 - Gantries share one copy of each transport. `001` and `003` now get the `grbl.py` that `005` to `009` used, which adds `halt()` and the `apply_safe_z` keyword on `move_relative`. Nothing else changed in it.

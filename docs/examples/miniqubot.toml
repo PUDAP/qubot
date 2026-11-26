@@ -1,4 +1,4 @@
-# Example contract for gantry 001-1unit-grbl-serial.
+# Example contract for miniqubot, on gantry 001-1unit-grbl-serial.
 # Used as: miniqubot.
 # Reference values only. A site edge copies this to contracts/<version>.toml,
 # fills every blank, and keeps machine_id and the port env names from its

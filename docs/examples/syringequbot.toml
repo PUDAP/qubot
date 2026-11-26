@@ -1,4 +1,4 @@
-# Example contract for gantry 002-1unit-reprap-http.
+# Example contract for syringequbot, on gantry 002-1unit-reprap-http.
 # Used as: capper, then syringequbot.
 # Reference values only. A site edge copies this to contracts/<version>.toml,
 # fills every blank, and keeps machine_id and the port env names from its

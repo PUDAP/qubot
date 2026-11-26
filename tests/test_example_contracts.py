@@ -34,7 +34,7 @@ def _filled(text: str) -> str:
     return text.replace('confirm = ""', "confirm = true")
 
 
-def test_there_is_one_example_per_known_gantry():
+def test_there_is_one_example_per_known_machine():
     assert len(EXAMPLES) == 9
 
 

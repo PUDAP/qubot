@@ -1,4 +1,4 @@
-# Example contract for gantry 003-2unit-grbl-serial.
+# Example contract for pipqubot-mof, on gantry 003-2unit-grbl-serial.
 # Used as: pipqubot-mof.
 # Reference values only. A site edge copies this to contracts/<version>.toml,
 # fills every blank, and keeps machine_id and the port env names from its

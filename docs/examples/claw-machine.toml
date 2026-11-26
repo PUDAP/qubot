@@ -1,4 +1,4 @@
-# Example contract for gantry 005-8unit-grblhal-serial.
+# Example contract for claw-machine, on gantry 005-8unit-grblhal-serial.
 # Used as: Claw machine (pick-and-place).
 # Reference values only. A site edge copies this to contracts/<version>.toml,
 # fills every blank, and keeps machine_id and the port env names from its

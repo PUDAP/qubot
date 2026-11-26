@@ -27,7 +27,7 @@ On IMRE that is `puda-imre-mof/edges/pipqubot-xl-edge/` and `puda-imre-mof/edges
 ## Steps
 
 1. Fill every blank in [CONTRACT.md](../CONTRACT.md). Scaffold the service from [edge-python-template](https://github.com/PUDAP/edge-python-template) only after that. Keep the existing directory name and `MACHINE_ID`.
-2. Start from `docs/examples/<gantry>.toml`, fill it, and put it at `<edge>/contracts/<version>.toml`. Leave `.env.example` as placeholders.
+2. Start from `docs/examples/<machine>.toml`, fill it, and put it at `<edge>/contracts/<version>.toml`. Leave `.env.example` as placeholders.
 3. Check it: `python3 scripts/check_contract.py <edge>/contracts/<version>.toml`
 4. Copy the ingredients: `python3 scripts/vendor_edge.py <edge>/contracts/<version>.toml <edge>`
 5. From the edge directory, run `uv lock`. Build and start the container only when a person allows that machine to move.
