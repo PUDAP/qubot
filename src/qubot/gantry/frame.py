@@ -95,9 +95,11 @@ class Frame:
 
     def slot_names(self, rows: Optional[int] = None, cols: Optional[int] = None) -> list[str]:
         """Deck slot names, ``A1`` upward. Defaults to the frame's default deck."""
+        from ..labware.deck import slot_names
+
         rows = self.default_deck["rows"] if rows is None else rows
         cols = self.default_deck["cols"] if cols is None else cols
-        return [f"{chr(65 + row)}{col + 1}" for row in range(rows) for col in range(cols)]
+        return slot_names(rows, cols)
 
 
 __all__ = ["Frame"]

@@ -5,7 +5,7 @@ description: Build or update a qubot edge's driver.py with the qubot driver pack
 
 # Building a qubot edge
 
-`qubot` is one Python package of gantry controllers, the `Frame` type, end-effector drivers, geometry, and the edge kit. It holds no machine values. Each edge's `driver.py` imports the drivers it carries, sets its frame limits and calibration as constants, and wraps them in a PUDA `Driver` class. Import from each area: `from qubot.gantry import Frame, GrblHALController`, `from qubot.end_effector import RotatingVacuumGripper`; the two rLine pipettes as modules (`from qubot.end_effector import rline_50_1000`). This repository does not hold a running edge, a host `.env`, or a site's machine id. For NATS, `@command`/`@safety`, hooks, telemetry, and `main.py`, use the `puda-edge` skill.
+`qubot` is one Python package of gantry controllers, the `Frame` type, end-effector drivers, `Position`, and labware (`qubot.labware`). It holds no machine values. Each edge's `driver.py` imports the drivers it carries, sets its frame limits and calibration as constants, and wraps them in a PUDA `Driver` class. Import from each area: `from qubot.gantry import Frame, GrblHALController`, `from qubot.end_effector import RotatingVacuumGripper`; the two rLine pipettes as modules (`from qubot.end_effector import rline_50_1000`). This repository does not hold a running edge, a host `.env`, or a site's machine id. For NATS, `@command`/`@safety`, hooks, telemetry, and `main.py`, use the `puda-edge` skill.
 
 Supported controllers and end effectors are listed in the [README](../../README.md#supported-hardware). The README's [design](../../README.md#design) section explains the split. Record driver changes in [CHANGELOG.md](../../CHANGELOG.md).
 
@@ -41,6 +41,7 @@ One qubot is one directory directly under the site monorepo's `edges/` directory
 <puda-site>/edges/<one-qubot>/
   driver.py        # qubot imports, FRAME + calibration constants, Driver with @command methods
   main.py          # Config (MACHINE_ID, NATS_SERVERS, ports) -> Driver(...)
+  labware/         # the edge's own <name>.json labware definitions, if any
   pyproject.toml   # depends on qubot-drivers, pinned
   uv.lock
   Dockerfile
@@ -63,6 +64,7 @@ Answer every item before scaffolding. The answers go into the edge's `driver.py`
 - End effectors, and for each: axis, port `Config` field, calibration values:
 - Syringe length, if an autosampler syringe is mounted:
 - Deck: frame default grid, or a replacement. Calibrated slot origins, or uncalibrated:
+- Labware used, and which are new (each new one is a `<name>.json` in the edge's `labware/`, passed as `labware_paths`):
 - Advertise deck commands: yes or no:
 - MACHINE_ID:
 - NATS_SERVERS:
@@ -79,4 +81,4 @@ Answer every item before scaffolding. The answers go into the edge's `driver.py`
 
 Attaching another toolhead is an edit to `driver.py` and `main.py`, then a rebuild.
 
-`.env.example` stays placeholders. If the user supplies this host's `.env`, copy it to `<edge>/.env` and `chmod 600` it; never copy `.env.example`. Otherwise leave `.env` absent; the edge refuses to start until it is filled (`qubot.edgekit.require_filled_env`).
+`.env.example` stays placeholders. If the user supplies this host's `.env`, copy it to `<edge>/.env` and `chmod 600` it; never copy `.env.example`. Otherwise leave `.env` absent. Make each port and host a required `Config` field (no default) in `main.py`, so a missing or blank `.env` stops the edge at startup.

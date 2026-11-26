@@ -12,7 +12,7 @@ It holds no machine settings: each edge imports the drivers it needs and configu
 - Code lives in `src/qubot/`. One `pyproject.toml` at the root; gantries and end effectors are modules, not separate packages.
 - `qubot.gantry` has the controllers (`GrblHALController`, `GrblWSController`, `RepRapHTTPController`), shared by every gantry, and `Frame`, which holds one machine's axes, hardware limits, default deck, and optional home order and firmware checks. It refuses limits outside the frame.
 - `qubot.end_effector` has one driver per toolhead (`RotatingVacuumGripper`, `Chamber`, …). Calibration (servo pulses, waypoints, delays, force corrections, pipette pacing) is a constructor argument, and bad values raise.
-- `qubot.geometry` is the shared position, deck, and labware module. `qubot.edgekit.require_filled_env` refuses to start an edge until a filled local `.env` exists.
+- `qubot.geometry` has `Position`. `qubot.labware` has `StandardLabware` and `Deck`, a few bundled labware definitions, and lets each edge add its own definitions (see [Labware](#labware)).
 - The [qubot-driver skill](skills/qubot-driver/SKILL.md#reference-drivers) has a starting-point `driver.py` for each known machine, with the values from the machines built so far.
 - Finished edges are not stored on `main`. For an edge built before the qubot modularization and the monorepo restructuring, use the `legacy-edges` branch.
 
@@ -61,7 +61,7 @@ flowchart TB
     transport["qubot.gantry:<br/>grbl, grbl_ws, reprap_http controllers"]
     gantry["qubot.gantry.Frame:<br/>axes, limit checks, deck slots"]
     effector["qubot.end_effector.name:<br/>protocol, takes calibration as arguments"]
-    geometry["qubot.geometry:<br/>Position, labware definitions"]
+    geometry["qubot.geometry, qubot.labware:<br/>Position, Deck, labware definitions"]
   end
   config["edge driver.py:<br/>Frame and calibration constants, Driver with @command and @safety"]
   transport --> config
@@ -102,6 +102,19 @@ Each controller is paired with a `Frame` (`from qubot.gantry import Frame`) that
 | Parallel force actuators | `from qubot.end_effector import ParallelFingers` | Linear actuators with force sensing, one port each. | Serial, 115200 baud | eis-qubot |
 
 The two rLine pipettes are imported as modules because both define `connect` and `SatoriusController`. Lower-level pieces: `qubot.end_effector.satorius` / `satorius_multistep` (`SatoriusController`), `RLineModel` and `RLINE_SPECS` (rLine 5-200, 50-1000, 100-5000 µL spec table, `from qubot.end_effector import RLineModel`), and `qubot.serialcontroller` (`SerialController` base).
+
+## Labware
+
+```python
+from qubot.labware import Deck, StandardLabware
+
+deck = Deck.from_frame(FRAME, labware_paths=[Path(__file__).parent / "labware"])
+deck.load_labware("A1", "opentrons_96_tiprack_300ul")   # bundled
+deck.load_labware("B1", "my_reservoir")                  # edges/<one-qubot>/labware/my_reservoir.json
+deck.load_labware("A2", StandardLabware.from_definition("probe_block", definition_dict))
+```
+
+Definitions are Opentrons-style JSON (`wells`, `ordering`, `dimensions`) plus `insert_depth`. Loading by name searches the edge's `labware_paths` first, then the bundled `qubot/labware/definitions/`, so an edge can add new labware or override a bundled one without changing qubot. `get_available_labware(paths)` lists both. Bundled: `opentrons_96_tiprack_300ul`, `sartorious_96_tiprack_1000ul`, `polyelectric_96_wellplate_330ul`, `polyelectric_8_wellplate_30000ul`, `bioshake`, `MEA_cell_MTP`, `trash_bin_mof`, `trash_bin_create`.
 
 ## Build a site edge
 

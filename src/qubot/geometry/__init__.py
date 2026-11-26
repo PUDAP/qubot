@@ -1,10 +1,5 @@
-from .deck import Deck
-from .labware import StandardLabware, get_available_labware
+"""Positions in machine coordinates."""
+
 from .position import Position
 
-__all__ = [
-    "Deck",
-    "Position",
-    "StandardLabware",
-    "get_available_labware",
-]
+__all__ = ["Position"]
