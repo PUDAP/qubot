@@ -51,6 +51,56 @@ One qubot is one directory directly under the site monorepo's `edges/` directory
 
 On IMRE that is `puda-imre-mof/edges/pipqubot-xl-edge/` and `puda-imre-mof/edges/syringequbot-edge/`. Another site gets its own monorepo and only its own qubot directories.
 
+## Custom labware
+
+Labware that qubot does not bundle goes in the edge's `labware/` folder as `<name>.json`. Loading by name searches the edge's folders first, then the bundled definitions, so a file there can also replace a bundled one with the same name. List what is bundled with `get_available_labware()`.
+
+`edges/<one-qubot>/labware/vial_rack_2x2.json`. Coordinates are mm from the labware's front-left-bottom corner. `x`/`y` are well centers, `z` is the well bottom.
+
+```json
+{
+  "metadata": {"displayName": "2x2 Vial Rack 20 mL", "displayCategory": "tubeRack", "displayVolumeUnits": "µL"},
+  "dimensions": {"xDimension": 60.0, "yDimension": 60.0, "zDimension": 45.0},
+  "ordering": [["A1", "B1"], ["A2", "B2"]],
+  "wells": {
+    "A1": {"x": 15.0, "y": 45.0, "z": 5.0, "depth": 40.0, "diameter": 28.0, "shape": "circular", "totalLiquidVolume": 20000},
+    "B1": {"x": 15.0, "y": 15.0, "z": 5.0, "depth": 40.0, "diameter": 28.0, "shape": "circular", "totalLiquidVolume": 20000},
+    "A2": {"x": 45.0, "y": 45.0, "z": 5.0, "depth": 40.0, "diameter": 28.0, "shape": "circular", "totalLiquidVolume": 20000},
+    "B2": {"x": 45.0, "y": 15.0, "z": 5.0, "depth": 40.0, "diameter": 28.0, "shape": "circular", "totalLiquidVolume": 20000}
+  },
+  "insert_depth": 40.0
+}
+```
+
+- `ordering` lists wells column by column; `get_available_labware` reads rows and columns from it.
+- `wells.<id>.x/y/z` gives `get_well_position`.
+- `dimensions.zDimension` gives `get_height()`.
+- `insert_depth` gives `get_insert_depth()`.
+
+Other Opentrons fields (`brand`, `parameters`, `groups`, …) may be included and are ignored.
+
+In `driver.py`:
+
+```python
+from pathlib import Path
+
+from qubot.labware import Deck, StandardLabware
+
+LABWARE_DIR = Path(__file__).resolve().parent / "labware"
+
+deck = Deck.from_frame(FRAME, labware_paths=[LABWARE_DIR])
+deck.load_labware("A1", "vial_rack_2x2")                 # edges/<one-qubot>/labware/vial_rack_2x2.json
+deck.load_labware("A2", "opentrons_96_tiprack_300ul")    # bundled with qubot
+rack = deck["A1"]
+rack.get_well_position("B2")                             # Position(x=45.0, y=15.0, z=5.0), relative to the rack
+
+# Without a deck: one file, or a folder search.
+rack = StandardLabware.from_file(LABWARE_DIR / "vial_rack_2x2.json")
+rack = StandardLabware("vial_rack_2x2", search_paths=[LABWARE_DIR])
+```
+
+Add the slot's calibrated origin to `get_well_position(...)` to get a machine coordinate. Slot origins are calibrated per edge and kept in `driver.py`, not in the labware file. The template's Dockerfile copies the whole edge directory (`COPY . .`), so `labware/` ships in the image unless `.dockerignore` excludes it.
+
 ## Edge checklist
 
 Answer every item before scaffolding. The answers go into the edge's `driver.py` (constants, `@safety`) and `main.py` (`Config` fields). Start from the matching reference driver if there is one.
