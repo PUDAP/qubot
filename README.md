@@ -31,6 +31,33 @@ def connect_gantry() -> GrblHALController:
     return gantry
 ```
 
+## Supported hardware
+
+### Gantry controllers
+
+| Controller | Import | Firmware and link | Used on |
+|---|---|---|---|
+| `GrblHALController` | `from qubot.gantry.grbl import GrblHALController` | GRBL 1.1 and grblHAL over USB serial. Feed-hold with realtime `!`. | miniqubot, pipqubot-mof, claw-machine, dancefloor, overkill2, photoreactor, eis-qubot |
+| `GrblWSController` | `from qubot.gantry.grbl_ws import GrblWSController` | GRBL over WebSocket (`ws://<host>:81`). | grblHAL gantries with a network board |
+| `RepRapHTTPController` | `from qubot.gantry.reprap_http import RepRapHTTPController` | RepRapFirmware over HTTP (`rr_gcode`, `rr_status`). Supports `set_pin`. | syringequbot, pipqubot-xl |
+
+Each controller is paired with a `qubot.gantry.Frame` that holds the machine's axes, travel, and deck.
+
+### End effectors
+
+| End effector | Import | What it is | Link | Used on |
+|---|---|---|---|---|
+| Sartorius rLine 50-1000 µL | `from qubot.end_effector.rline_50_1000 import connect` | Pipette, 2.5 µL/step, six preset speeds. | Serial | pipqubot-mof, pipqubot-xl |
+| Sartorius rLine 50-1000 µL, multistep | `from qubot.end_effector.rline_50_1000_multistep import connect` | Same pipette, with any aspirate/dispense speed up to 1120 µL/s made from paced preset moves. | Serial | overkill2 |
+| A-axis capper | `from qubot.end_effector.a_axis_capper import Capper` | Capping tool driven by gantry axis A. | Gantry axis | pipqubot-xl |
+| Autosampler syringe | `from qubot.end_effector.autosampler_syringe import narrow_z` | Passive syringe; narrows Z travel by its length. Liquid handling is on a separate pump edge. | None | syringequbot |
+| Rotating vacuum gripper | `from qubot.end_effector.rotating_vacuum_gripper import RotatingVacuumGripper` | Vacuum cup (coolant valve) and yaw servo (spindle PWM). | Gantry GRBL port | claw-machine |
+| Vacuum chamber | `from qubot.end_effector.vacuum_chamber import Chamber` | Chamber valve and lid waypoints, with closed/vented interlocks. | Gantry GRBL port | dancefloor |
+| Orion 4-channel LED | `from qubot.end_effector.orion_4ch_led import LedBoard` | Four-channel UV LED board, write-only line protocol. | Serial, 9600 baud | photoreactor |
+| Parallel force actuators | `from qubot.end_effector.parallel_force_actuator import ParallelFingers` | Linear actuators with force sensing, one port each. | Serial, 115200 baud | eis-qubot |
+
+Lower-level pieces: `qubot.end_effector.satorius` / `satorius_multistep` (`SatoriusController`), `qubot.end_effector.rline` (rLine 5-200, 50-1000, 100-5000 µL spec table), and `qubot.serialcontroller` (`SerialController` base).
+
 ## Build a site edge
 
 Answer [EDGE_CHECKLIST.md](EDGE_CHECKLIST.md), then scaffold the edge service from [edge-python-template](https://github.com/PUDAP/edge-python-template). Keep the edge directory out of this repository and put it in the site monorepo's `edges/`.
@@ -56,21 +83,6 @@ Reference hardware configs in `docs/examples/`. Gantry labels are `{serial}-{siz
 | [`overkill2.py`](docs/examples/overkill2.py) | `007-2unit-grblhal-serial` | Liquid handling, pipette gantry. |
 | [`photoreactor.py`](docs/examples/photoreactor.py) | `008-1unit-grblhal-serial` | UV qubot. |
 | [`eis_qubot.py`](docs/examples/eis_qubot.py) | `009-1unit-grblhal-serial` | Electrochemical station. |
-
-## End effectors
-
-Module is `qubot.end_effector.<name with underscores>`.
-
-| Effector | Where it has been used |
-|---|---|
-| `rline-50-1000` | pipqubot-mof, then pipqubot-xl. |
-| `rline-50-1000-multistep` | PESCador pipette. Same 50-1000 µL body, with calibrated multistep aspirate and dispense speed. |
-| `a-axis-capper` | pipqubot-xl |
-| `autosampler-syringe` | syringequbot |
-| `rotating-vacuum-gripper` | PESCador claw. Vacuum and yaw share the gantry port. |
-| `vacuum-chamber` | PESCador dancefloor. Valve and lid waypoints share the gantry port. |
-| `orion-4ch-led` | PESCador photoreactor. Four channels, one serial port. |
-| `parallel-force-actuator` | PESCador EIS station. Four serial actuators. |
 
 ## Offline checks
 
