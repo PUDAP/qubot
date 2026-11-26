@@ -1,4 +1,4 @@
-"""syringequbot: gantry 002-1unit-reprap-http.
+"""syringequbot: 1-unit, RepRapFirmware over HTTP (RepRapHTTPController) gantry.
 
 Starting-point driver.py for this machine. Copy it into the edge, pass the
 ports from main.py's Config, review every @safety text, and add the

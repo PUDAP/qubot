@@ -1,4 +1,4 @@
-"""eis-qubot: gantry 009-1unit-grblhal-serial.
+"""eis-qubot: 1-unit, grblHAL over serial (GrblHALController) gantry.
 
 Starting-point driver.py for this machine. Copy it into the edge, pass the
 ports from main.py's Config, review every @safety text, and add the

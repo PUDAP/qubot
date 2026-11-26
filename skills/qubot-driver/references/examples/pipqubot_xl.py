@@ -1,4 +1,4 @@
-"""pipqubot-xl: gantry 004-4unit-reprap-http.
+"""pipqubot-xl: 4-unit, RepRapFirmware over HTTP (RepRapHTTPController) gantry.
 
 Starting-point driver.py for this machine. Copy it into the edge, pass the
 ports from main.py's Config, review every @safety text, and add the

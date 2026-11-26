@@ -1,6 +1,6 @@
 [project]
 name = "qubot-drivers"
-version = "0.1.0"
+version = "0.1.1"
 description = "Qubot gantry and end-effector drivers for PUDA edges."
 readme = "README.md"
 license = "MIT"

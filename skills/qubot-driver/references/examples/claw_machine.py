@@ -1,4 +1,4 @@
-"""claw-machine: gantry 005-8unit-grblhal-serial.
+"""claw-machine: 8-unit, grblHAL over serial (GrblHALController) gantry.
 
 Starting-point driver.py for this machine. Copy it into the edge, pass the
 ports from main.py's Config, review every @safety text, and add the

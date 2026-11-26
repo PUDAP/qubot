@@ -15,15 +15,15 @@ Supported controllers and end effectors are listed in the [README](../../README.
 
 | File | Gantry | Toolheads |
 |---|---|---|
-| [`miniqubot.py`](references/examples/miniqubot.py) | `001-1unit-grbl-serial` | none |
-| [`syringequbot.py`](references/examples/syringequbot.py) | `002-1unit-reprap-http` | autosampler syringe (frame was the capper before) |
-| [`pipqubot_mof.py`](references/examples/pipqubot_mof.py) | `003-2unit-grbl-serial` | rLine 50-1000 µL |
-| [`pipqubot_xl.py`](references/examples/pipqubot_xl.py) | `004-4unit-reprap-http` | rLine 50-1000 µL, A-axis capper |
-| [`claw_machine.py`](references/examples/claw_machine.py) | `005-8unit-grblhal-serial` | rotating vacuum gripper |
-| [`dancefloor.py`](references/examples/dancefloor.py) | `006-1unit-grblhal-serial` | vacuum chamber |
-| [`overkill2.py`](references/examples/overkill2.py) | `007-2unit-grblhal-serial` | rLine 50-1000 µL multistep |
-| [`photoreactor.py`](references/examples/photoreactor.py) | `008-1unit-grblhal-serial` | Orion 4-channel LED |
-| [`eis_qubot.py`](references/examples/eis_qubot.py) | `009-1unit-grblhal-serial` | parallel force actuators |
+| [`miniqubot.py`](references/examples/miniqubot.py) | 1-unit, GRBL over serial (`GrblHALController`) | none |
+| [`syringequbot.py`](references/examples/syringequbot.py) | 1-unit, RepRapFirmware over HTTP (`RepRapHTTPController`) | autosampler syringe (frame was the capper before) |
+| [`pipqubot_mof.py`](references/examples/pipqubot_mof.py) | 2-unit, GRBL over serial (`GrblHALController`) | rLine 50-1000 µL |
+| [`pipqubot_xl.py`](references/examples/pipqubot_xl.py) | 4-unit, RepRapFirmware over HTTP (`RepRapHTTPController`) | rLine 50-1000 µL, A-axis capper |
+| [`claw_machine.py`](references/examples/claw_machine.py) | 8-unit, grblHAL over serial (`GrblHALController`) | rotating vacuum gripper |
+| [`dancefloor.py`](references/examples/dancefloor.py) | 1-unit, grblHAL over serial (`GrblHALController`) | vacuum chamber |
+| [`overkill2.py`](references/examples/overkill2.py) | 2-unit, grblHAL over serial (`GrblHALController`) | rLine 50-1000 µL multistep |
+| [`photoreactor.py`](references/examples/photoreactor.py) | 1-unit, grblHAL over serial (`GrblHALController`) | Orion 4-channel LED |
+| [`eis_qubot.py`](references/examples/eis_qubot.py) | 1-unit, grblHAL over serial (`GrblHALController`) | parallel force actuators |
 
 Each file has:
 - Constants: `FRAME`, `SOFT_LIMITS`, `HOME_ON_STARTUP`, and the toolhead calibration measured on that machine.
@@ -31,7 +31,7 @@ Each file has:
 - The `shutdown` and `estop` hooks.
 - The basic commands `home`, `move_absolute`, `move_relative`, and `get_position`, with review-me `@safety` text.
 
-The docstring keeps the machine's notes, open limit questions, and the commands its earlier edge advertised. Machine-specific commands (aspirate, grip, lamp, press) are written per edge on top of these. Gantry serials `001` to `004` are provisional labels, not asset tags.
+The docstring keeps the machine's notes, open limit questions, and the commands its earlier edge advertised. Machine-specific commands (aspirate, grip, lamp, press) are written per edge on top of these.
 
 ## Where a finished edge lives
 

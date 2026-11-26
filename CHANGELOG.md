@@ -2,6 +2,12 @@
 
 Driver, geometry, labware, and skill changes are recorded here. A site edge does not append to this file; it pins the qubot version it uses.
 
+## 0.1.1 - 2026-11-26
+
+- `RepRapSerialController` (`from qubot.gantry import RepRapSerialController`): RepRapFirmware over USB serial, from the `RepRapController` in the running first-edge's `qubot_drivers` 0.0.39. G-code with CR terminator, `G28` homing, absolute moves with relative moves converted internally, `M400` move wait, and async `M114` position. Used by the first gantry in puda-eletrochem.
+- Sartorius `SatoriusController` accepts echo-only drive responses again (fix from `qubot_drivers` 0.0.39 that the 0.1.0 merge dropped). A drive that echoes the sent frame and never replies reads as `ok`, and `_wait_ready` stops polling `DS` on such a drive.
+- README and the qubot-driver skill no longer use numbered gantry labels; reference drivers are described by size and controller.
+
 ## 0.1.0 - 2026-11-26
 
 - First PyPI release, `qubot-drivers` 0.1.0. Publishing runs from `.github/workflows/publish.yml` on a GitHub release via PyPI trusted publishing.

@@ -5,6 +5,7 @@
 - ``GrblHALController``: GRBL 1.1 and grblHAL over serial (``qubot.gantry.grbl``).
 - ``GrblWSController``: GRBL over WebSocket (``qubot.gantry.grbl_ws``).
 - ``RepRapHTTPController``: RepRapFirmware over HTTP (``qubot.gantry.reprap_http``).
+- ``RepRapSerialController``: RepRapFirmware over USB serial (``qubot.gantry.reprap_serial``).
 - ``Frame``: axes, travel, and deck of one machine (``qubot.gantry.frame``).
 
 Controllers load on first use, so importing this package opens nothing and
@@ -23,12 +24,14 @@ _LAZY = {
     "GrblStatusReport": ".grbl",
     "GrblWSController": ".grbl_ws",
     "RepRapHTTPController": ".reprap_http",
+    "RepRapSerialController": ".reprap_serial",
 }
 
 if TYPE_CHECKING:
     from .grbl import GrblHALController, GrblStatusReport
     from .grbl_ws import GrblWSController
     from .reprap_http import RepRapHTTPController
+    from .reprap_serial import RepRapSerialController
 
 
 def __getattr__(name: str):
