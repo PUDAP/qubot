@@ -15,9 +15,8 @@ CR. A claw configuration set CR LF; that conflict stays in the edge config.
 
 from puda import command, safety
 
-from qubot.gantry import Frame
-from qubot.gantry.grbl import GrblHALController
-from qubot.end_effector.rotating_vacuum_gripper import RotatingVacuumGripper
+from qubot.gantry import Frame, GrblHALController
+from qubot.end_effector import RotatingVacuumGripper
 from qubot.geometry import Position
 
 FRAME = Frame(

@@ -14,9 +14,8 @@ correction.
 
 from puda import command, safety
 
-from qubot.gantry import Frame
-from qubot.gantry.grbl import GrblHALController
-from qubot.end_effector.parallel_force_actuator import ParallelFingers
+from qubot.gantry import Frame, GrblHALController
+from qubot.end_effector import ParallelFingers
 from qubot.geometry import Position
 
 FRAME = Frame(

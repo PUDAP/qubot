@@ -13,9 +13,8 @@ that Z past -125 meets the current vial holder is not stored as a limit.
 
 from puda import command, safety
 
-from qubot.gantry import Frame
-from qubot.gantry.reprap_http import RepRapHTTPController
-from qubot.end_effector.autosampler_syringe import narrow_z
+from qubot.gantry import Frame, RepRapHTTPController
+from qubot.end_effector import narrow_z
 from qubot.geometry import Position
 
 FRAME = Frame(

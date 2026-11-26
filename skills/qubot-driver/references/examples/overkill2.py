@@ -12,8 +12,7 @@ are 176 mm and 480 mm, both inside that allowance.
 
 from puda import command, safety
 
-from qubot.gantry import Frame
-from qubot.gantry.grbl import GrblHALController
+from qubot.gantry import Frame, GrblHALController
 from qubot.end_effector import rline_50_1000_multistep
 from qubot.geometry import Position
 

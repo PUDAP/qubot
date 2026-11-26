@@ -10,9 +10,8 @@ It holds no machine settings: each edge imports the drivers it needs and configu
 
 - No `MACHINE_ID`, NATS servers, host addresses, serial-device paths, frame limits, calibration, container config, or `.env`. A site edge's `.env.example` stays placeholders.
 - Code lives in `src/qubot/`. One `pyproject.toml` at the root; gantries and end effectors are modules, not separate packages.
-- `qubot.gantry.grbl`, `qubot.gantry.grbl_ws`, `qubot.gantry.reprap_http` are the transports, shared by every gantry.
-- `qubot.gantry.Frame` holds one machine's axes, hardware limits, default deck, and optional home order and firmware checks. It refuses limits outside the frame.
-- `qubot.end_effector.<name>` is one toolhead driver. Calibration (servo pulses, waypoints, delays, force corrections, pipette pacing) is a constructor argument, and bad values raise.
+- `qubot.gantry` has the controllers (`GrblHALController`, `GrblWSController`, `RepRapHTTPController`), shared by every gantry, and `Frame`, which holds one machine's axes, hardware limits, default deck, and optional home order and firmware checks. It refuses limits outside the frame.
+- `qubot.end_effector` has one driver per toolhead (`RotatingVacuumGripper`, `Chamber`, …). Calibration (servo pulses, waypoints, delays, force corrections, pipette pacing) is a constructor argument, and bad values raise.
 - `qubot.geometry` is the shared position, deck, and labware module. `qubot.edgekit.require_filled_env` refuses to start an edge until a filled local `.env` exists.
 - The [qubot-driver skill](skills/qubot-driver/SKILL.md#reference-drivers) has a starting-point `driver.py` for each known machine, with the values from the machines built so far.
 - Finished edges are not stored on `main`. For an edge built before the qubot modularization and the monorepo restructuring, use the `legacy-edges` branch.
@@ -22,9 +21,8 @@ A qubot edge's `driver.py` imports what it carries and configures it:
 ```python
 from puda import command, safety
 
-from qubot.gantry import Frame
-from qubot.gantry.grbl import GrblHALController
-from qubot.end_effector.rotating_vacuum_gripper import RotatingVacuumGripper
+from qubot.end_effector import RotatingVacuumGripper
+from qubot.gantry import Frame, GrblHALController
 from qubot.geometry import Position
 
 FRAME = Frame(axes=("X", "Y", "Z"),
@@ -84,26 +82,26 @@ flowchart TB
 
 | Controller | Import | Firmware and link | Used on |
 |---|---|---|---|
-| `GrblHALController` | `from qubot.gantry.grbl import GrblHALController` | GRBL 1.1 and grblHAL over USB serial. Feed-hold with realtime `!`. | miniqubot, pipqubot-mof, claw-machine, dancefloor, overkill2, photoreactor, eis-qubot |
-| `GrblWSController` | `from qubot.gantry.grbl_ws import GrblWSController` | GRBL over WebSocket (`ws://<host>:81`). | grblHAL gantries with a network board |
-| `RepRapHTTPController` | `from qubot.gantry.reprap_http import RepRapHTTPController` | RepRapFirmware over HTTP (`rr_gcode`, `rr_status`). Supports `set_pin`. | syringequbot, pipqubot-xl |
+| `GrblHALController` | `from qubot.gantry import GrblHALController` | GRBL 1.1 and grblHAL over USB serial. Feed-hold with realtime `!`. | miniqubot, pipqubot-mof, claw-machine, dancefloor, overkill2, photoreactor, eis-qubot |
+| `GrblWSController` | `from qubot.gantry import GrblWSController` | GRBL over WebSocket (`ws://<host>:81`). | grblHAL gantries with a network board |
+| `RepRapHTTPController` | `from qubot.gantry import RepRapHTTPController` | RepRapFirmware over HTTP (`rr_gcode`, `rr_status`). Supports `set_pin`. | syringequbot, pipqubot-xl |
 
-Each controller is paired with a `qubot.gantry.Frame` that holds the machine's axes, travel, and deck.
+Each controller is paired with a `Frame` (`from qubot.gantry import Frame`) that holds the machine's axes, travel, and deck. The defining modules (`qubot.gantry.grbl`, …) still work as import paths; the short form is preferred.
 
 ### End effectors
 
 | End effector | Import | What it is | Link | Used on |
 |---|---|---|---|---|
-| Sartorius rLine 50-1000 µL | `from qubot.end_effector.rline_50_1000 import connect` | Pipette, 2.5 µL/step, six preset speeds. | Serial | pipqubot-mof, pipqubot-xl |
-| Sartorius rLine 50-1000 µL, multistep | `from qubot.end_effector.rline_50_1000_multistep import connect` | Same pipette, with any aspirate/dispense speed up to 1120 µL/s made from paced preset moves. | Serial | overkill2 |
-| A-axis capper | `from qubot.end_effector.a_axis_capper import Capper` | Capping tool driven by gantry axis A. | Gantry axis | pipqubot-xl |
-| Autosampler syringe | `from qubot.end_effector.autosampler_syringe import narrow_z` | Passive syringe; narrows Z travel by its length. Liquid handling is on a separate pump edge. | None | syringequbot |
-| Rotating vacuum gripper | `from qubot.end_effector.rotating_vacuum_gripper import RotatingVacuumGripper` | Vacuum cup (coolant valve) and yaw servo (spindle PWM). | Gantry GRBL port | claw-machine |
-| Vacuum chamber | `from qubot.end_effector.vacuum_chamber import Chamber` | Chamber valve and lid waypoints, with closed/vented interlocks. | Gantry GRBL port | dancefloor |
-| Orion 4-channel LED | `from qubot.end_effector.orion_4ch_led import LedBoard` | Four-channel UV LED board, write-only line protocol. | Serial, 9600 baud | photoreactor |
-| Parallel force actuators | `from qubot.end_effector.parallel_force_actuator import ParallelFingers` | Linear actuators with force sensing, one port each. | Serial, 115200 baud | eis-qubot |
+| Sartorius rLine 50-1000 µL | `from qubot.end_effector import rline_50_1000`, then `rline_50_1000.connect(port)` | Pipette, 2.5 µL/step, six preset speeds. | Serial | pipqubot-mof, pipqubot-xl |
+| Sartorius rLine 50-1000 µL, multistep | `from qubot.end_effector import rline_50_1000_multistep` | Same pipette, with any aspirate/dispense speed up to 1120 µL/s made from paced preset moves. | Serial | overkill2 |
+| A-axis capper | `from qubot.end_effector import Capper` | Capping tool driven by gantry axis A. | Gantry axis | pipqubot-xl |
+| Autosampler syringe | `from qubot.end_effector import narrow_z` | Passive syringe; narrows Z travel by its length. Liquid handling is on a separate pump edge. | None | syringequbot |
+| Rotating vacuum gripper | `from qubot.end_effector import RotatingVacuumGripper` | Vacuum cup (coolant valve) and yaw servo (spindle PWM). | Gantry GRBL port | claw-machine |
+| Vacuum chamber | `from qubot.end_effector import Chamber` | Chamber valve and lid waypoints, with closed/vented interlocks. | Gantry GRBL port | dancefloor |
+| Orion 4-channel LED | `from qubot.end_effector import LedBoard` | Four-channel UV LED board, write-only line protocol. | Serial, 9600 baud | photoreactor |
+| Parallel force actuators | `from qubot.end_effector import ParallelFingers` | Linear actuators with force sensing, one port each. | Serial, 115200 baud | eis-qubot |
 
-Lower-level pieces: `qubot.end_effector.satorius` / `satorius_multistep` (`SatoriusController`), `qubot.end_effector.rline` (rLine 5-200, 50-1000, 100-5000 µL spec table), and `qubot.serialcontroller` (`SerialController` base).
+The two rLine pipettes are imported as modules because both define `connect` and `SatoriusController`. Lower-level pieces: `qubot.end_effector.satorius` / `satorius_multistep` (`SatoriusController`), `RLineModel` and `RLINE_SPECS` (rLine 5-200, 50-1000, 100-5000 µL spec table, `from qubot.end_effector import RLineModel`), and `qubot.serialcontroller` (`SerialController` base).
 
 ## Build a site edge
 

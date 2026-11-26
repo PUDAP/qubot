@@ -15,9 +15,8 @@ value belongs in the site edge .env.
 
 from puda import command, safety
 
-from qubot.gantry import Frame
-from qubot.gantry.grbl import GrblHALController
-from qubot.end_effector.vacuum_chamber import Chamber
+from qubot.gantry import Frame, GrblHALController
+from qubot.end_effector import Chamber
 from qubot.geometry import Position
 
 # pescador2 config X low is -119. This frame keeps the dancefloor-alone value

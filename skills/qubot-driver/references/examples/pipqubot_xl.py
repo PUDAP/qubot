@@ -10,10 +10,8 @@ Commands the earlier edge advertised: `reconcile_tip_attached`,
 
 from puda import command, safety
 
-from qubot.gantry import Frame
-from qubot.gantry.reprap_http import RepRapHTTPController
-from qubot.end_effector import rline_50_1000
-from qubot.end_effector.a_axis_capper import Capper
+from qubot.gantry import Frame, RepRapHTTPController
+from qubot.end_effector import Capper, rline_50_1000
 from qubot.geometry import Position
 
 FRAME = Frame(

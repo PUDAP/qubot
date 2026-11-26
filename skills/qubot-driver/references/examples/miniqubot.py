@@ -7,8 +7,7 @@ machine's own commands. Importing this file opens no port; Driver() does.
 
 from puda import command, safety
 
-from qubot.gantry import Frame
-from qubot.gantry.grbl import GrblHALController
+from qubot.gantry import Frame, GrblHALController
 from qubot.geometry import Position
 
 FRAME = Frame(

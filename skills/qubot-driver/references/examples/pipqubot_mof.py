@@ -11,8 +11,7 @@ Commands the earlier edge advertised: `home`, `move_to_well`,
 
 from puda import command, safety
 
-from qubot.gantry import Frame
-from qubot.gantry.grbl import GrblHALController
+from qubot.gantry import Frame, GrblHALController
 from qubot.end_effector import rline_50_1000
 from qubot.geometry import Position
 

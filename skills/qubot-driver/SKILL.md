@@ -5,7 +5,7 @@ description: Build or update a qubot edge's driver.py with the qubot driver pack
 
 # Building a qubot edge
 
-`qubot` is one Python package of gantry controllers, the `Frame` type, end-effector drivers, geometry, and the edge kit. It holds no machine values. Each edge's `driver.py` imports the drivers it carries, sets its frame limits and calibration as constants, and wraps them in a PUDA `Driver` class. This repository does not hold a running edge, a host `.env`, or a site's machine id. For NATS, `@command`/`@safety`, hooks, telemetry, and `main.py`, use the `puda-edge` skill.
+`qubot` is one Python package of gantry controllers, the `Frame` type, end-effector drivers, geometry, and the edge kit. It holds no machine values. Each edge's `driver.py` imports the drivers it carries, sets its frame limits and calibration as constants, and wraps them in a PUDA `Driver` class. Import from each area: `from qubot.gantry import Frame, GrblHALController`, `from qubot.end_effector import RotatingVacuumGripper`; the two rLine pipettes as modules (`from qubot.end_effector import rline_50_1000`). This repository does not hold a running edge, a host `.env`, or a site's machine id. For NATS, `@command`/`@safety`, hooks, telemetry, and `main.py`, use the `puda-edge` skill.
 
 Supported controllers and end effectors are listed in the [README](../../README.md#supported-hardware). The README's [design](../../README.md#design) section explains the split. Record driver changes in [CHANGELOG.md](../../CHANGELOG.md).
 
