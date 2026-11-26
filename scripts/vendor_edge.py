@@ -1,4 +1,7 @@
-"""Copy the packages named by a contract into a site edge's vendor directory.
+"""Copy the qubot package into a site edge's vendor directory for its contract.
+
+The whole package is copied to ``vendor/qubot``; the contract picks which
+gantry and effector modules the edge imports. ``vendor/REVISION`` records both.
 
 Does not build an image, start a container, or copy a host .env.
 Do not point it at an edge that is running.
@@ -23,32 +26,36 @@ def _ignore(directory: str, names: list[str]) -> list[str]:
     return [name for name in names if name in SKIP_DIRS or name.endswith((".pyc", ".pyo"))]
 
 
-def package_name(path: Path) -> str:
-    data = tomllib.loads((path / "pyproject.toml").read_text())
-    return data["project"]["name"]
+PACKAGE_FILES = ("pyproject.toml", "README.md", "LICENSE")
 
 
-def selected_packages(contract: dict) -> list[tuple[str, Path]]:
-    chosen: list[tuple[str, Path]] = []
+def selected_parts(contract: dict) -> list[str]:
+    """Contract gantry and effectors, checked against the qubot package registry."""
+    import sys
+
+    sys.path.insert(0, str(ROOT / "src"))
+    from qubot.end_effector import EFFECTORS
+    from qubot.gantry.frames import GANTRIES
+
     gantry_name = str(contract["gantry"])
-    gantry = ROOT / "gantries" / gantry_name
-    if not gantry.is_dir():
+    if gantry_name not in GANTRIES:
         raise SystemExit(f"missing gantry {gantry_name}")
-    chosen.append((f"vendor/gantries/{gantry_name}", gantry))
+    parts = [f"gantry {gantry_name} -> qubot.gantry.frames.{GANTRIES[gantry_name]}"]
     effectors = contract.get("effectors", [])
     if not isinstance(effectors, list):
         raise SystemExit("effectors must be a list")
     for effector in effectors:
-        directory = ROOT / "end-effectors" / str(effector)
-        if not directory.is_dir():
+        if str(effector) not in EFFECTORS:
             raise SystemExit(f"missing effector {effector}")
-        chosen.append((f"vendor/end-effectors/{effector}", directory))
-    for name in ("qubot-geometry", "qubot-edgekit"):
-        directory = ROOT / "packages" / name
-        if not directory.is_dir():
-            raise SystemExit(f"missing package {name}")
-        chosen.append((f"vendor/packages/{name}", directory))
-    return chosen
+        parts.append(f"effector {effector} -> qubot.end_effector.{EFFECTORS[str(effector)]}")
+    return parts
+
+
+def copy_package(destination: Path) -> None:
+    destination.mkdir(parents=True)
+    for name in PACKAGE_FILES:
+        shutil.copy2(ROOT / name, destination / name)
+    shutil.copytree(ROOT / "src", destination / "src", ignore=_ignore)
 
 
 def revision() -> tuple[str, str, bool]:
@@ -58,40 +65,34 @@ def revision() -> tuple[str, str, bool]:
     return commit, subject, bool(status.strip())
 
 
-def write_revision(vendor: Path, copies: list[str]) -> None:
+def write_revision(vendor: Path, parts: list[str]) -> None:
     commit, subject, dirty = revision()
     lines = [
         f"commit={commit}",
         f"subject={subject}",
         f"dirty={'yes' if dirty else 'no'}",
-        "packages:",
-        *[f"  {item}" for item in copies],
+        "package: vendor/qubot",
+        "contract:",
+        *[f"  {item}" for item in parts],
         "",
     ]
     (vendor / "REVISION").write_text("\n".join(lines))
 
 
-def workspace_block(members: list[tuple[str, str]]) -> str:
-    member_lines = "\n".join(f'    "{path}",' for _, path in members)
-    source_lines = "\n".join(f"{name} = {{ workspace = true }}" for name, _ in members)
+def sources_block() -> str:
     return (
         f"{MARKER_START}\n"
-        "[tool.uv.workspace]\n"
-        "members = [\n"
-        f"{member_lines}\n"
-        "]\n"
-        "\n"
         "[tool.uv.sources]\n"
-        f"{source_lines}\n"
+        'qubot = { path = "vendor/qubot" }\n'
         f"{MARKER_END}\n"
     )
 
 
-def update_pyproject(edge: Path, members: list[tuple[str, str]]) -> None:
+def update_pyproject(edge: Path) -> None:
     manifest = edge / "pyproject.toml"
     if not manifest.is_file():
         raise SystemExit(f"{edge} has no pyproject.toml; scaffold the edge before vendoring")
-    block = workspace_block(members)
+    block = sources_block()
     text = manifest.read_text()
     if MARKER_START in text and MARKER_END in text:
         start = text.index(MARKER_START)
@@ -117,21 +118,19 @@ def vendor(contract_path: Path, edge: Path) -> Path:
     if not edge.is_dir():
         raise SystemExit(f"missing edge directory {edge}")
     contract = tomllib.loads(contract_path.read_text())
-    packages = selected_packages(contract)
+    parts = selected_parts(contract)
     vendor_dir = edge / "vendor"
     if vendor_dir.exists():
         vendor_dir.relative_to(edge)
         shutil.rmtree(vendor_dir)
     vendor_dir.mkdir()
-    members: list[tuple[str, str]] = []
-    copies: list[str] = []
-    for relative, source in packages:
-        destination = edge / relative
-        shutil.copytree(source, destination, ignore=_ignore)
-        members.append((package_name(destination), relative))
-        copies.append(relative)
-    write_revision(vendor_dir, copies)
-    update_pyproject(edge, members)
+    copy_package(vendor_dir / "qubot")
+    write_revision(vendor_dir, parts)
+    update_pyproject(edge)
+    if "qubot" not in tomllib.loads((edge / "pyproject.toml").read_text()).get("project", {}).get(
+        "dependencies", []
+    ):
+        print('add "qubot" to [project].dependencies in the edge pyproject.toml')
     return vendor_dir
 
 
@@ -141,7 +140,7 @@ def main() -> None:
     parser.add_argument("edge", type=Path, help="Site edge directory")
     args = parser.parse_args()
     destination = vendor(args.contract.resolve(), args.edge)
-    print(f"vendored packages into {destination}")
+    print(f"vendored qubot into {destination}")
 
 
 if __name__ == "__main__":

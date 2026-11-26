@@ -51,7 +51,7 @@ def rewrite(text: str, version: str, effectors: list[str], sets: dict[str, str])
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("edge", type=Path, help="Site edge directory")
-    parser.add_argument("effector", help="End-effector package name, for example a-axis-capper")
+    parser.add_argument("effector", help="End-effector name, for example a-axis-capper")
     parser.add_argument(
         "--set",
         action="append",
@@ -65,8 +65,12 @@ def main() -> None:
     )
     args = parser.parse_args()
     edge = args.edge.resolve()
-    effector_dir = ROOT / "end-effectors" / args.effector
-    if not effector_dir.is_dir():
+    import sys
+
+    sys.path.insert(0, str(ROOT / "src"))
+    from qubot.end_effector import EFFECTORS
+
+    if args.effector not in EFFECTORS:
         raise SystemExit(f"unknown effector {args.effector}")
     existing = contract_paths(edge)
     if not existing:

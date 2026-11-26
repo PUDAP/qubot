@@ -2,6 +2,17 @@
 
 Ingredient, geometry, edgekit, and contract-template changes are recorded here. A site edge does not append to this file. `scripts/vendor_edge.py` records the commit it copied in that edge's `vendor/REVISION`.
 
+## 2026-11-26
+
+- One package, `qubot`, replaces the 18 workspace packages. One root `pyproject.toml`; code is under `src/qubot/`.
+- Imports: `qubot.gantry.grbl`, `qubot.gantry.grbl_ws`, `qubot.gantry.reprap_http`, `qubot.gantry.frames.g001` to `g009`, `qubot.end_effector.<name>`, `qubot.geometry`, `qubot.edgekit`. Old names such as `gantry_005`, `rline_50_1000`, and `qubot_geometry` are gone.
+- Contract names are unchanged. `qubot.gantry.frames.load` and `qubot.end_effector.load` resolve them; placeholders moved to `frames/g{serial}.toml`.
+- Gantries share one copy of each transport. `001` and `003` now get the `grbl.py` that `005` to `009` used, which adds `halt()` and the `apply_safe_z` keyword on `move_relative`. Nothing else changed in it.
+- The two rLine bodies share `rline.py`. `rline-50-1000-multistep` keeps its own controller in `satorius_multistep.py` and pacing in `rline_pace.py`.
+- `families/` is removed; its transports are the package modules. The rLine manual moved to `docs/`.
+- `vendor_edge.py` copies the package to `vendor/qubot` and sets `qubot = { path = "vendor/qubot" }` in the edge's `[tool.uv.sources]`.
+- `requires-python` is `>=3.11`; `qubot.edgekit` already needed `tomllib`.
+
 ## 2026-11-25
 
 - `rline-50-1000-multistep`: 50-1000 µL rLine body that splits a requested aspirate or dispense speed across a faster preset. Step resolution and response time are the calibrated inputs, defaulting to 10 steps and 1.03 s. `rline-50-1000` is unchanged.

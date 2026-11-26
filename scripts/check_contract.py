@@ -1,36 +1,39 @@
 """Refuse a contract that is incomplete or outside the frame.
 
-The ingredient packages live in this repository. Pass one or more filled
+Gantries and end effectors are modules of the ``qubot`` package in ``src/``. Pass one or more filled
 contract files. A file at ``<edge>/contracts/<version>.toml`` is also checked
 against that edge's ``.env.example``.
 """
 
 from __future__ import annotations
 
-import importlib.util
+import ast
 import sys
 import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+# These three imports are stdlib-only, so the check runs without pyserial.
+from qubot import end_effector  # noqa: E402
+from qubot.end_effector import rline as rline_catalog  # noqa: E402
+from qubot.gantry import frames  # noqa: E402
 
 
-def load_module(path: Path, name: str):
-    spec = importlib.util.spec_from_file_location(name, path)
-    if spec is None or spec.loader is None:
-        raise ImportError(path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+def _locked_model(effector: str) -> str | None:
+    """Read SELECTED_MODEL without importing the controller, which needs pyserial."""
+    path = ROOT / "src" / "qubot" / "end_effector" / f"{end_effector.module_name(effector)}.py"
+    for node in ast.parse(path.read_text()).body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "SELECTED_MODEL" for target in node.targets
+        ):
+            return ast.unparse(node.value)
+    return None
 
 
 def _check_rline_50_1000(label: str, contract: dict, effector: str, errors: list[str]) -> None:
-    package = effector.replace("-", "_")
-    path = ROOT / "end-effectors" / effector / "src" / package / "rline.py"
-    if not path.is_file():
-        errors.append(f"{label}: {effector} is missing {path}")
-        return
-    pipette = load_module(path, f"rline_catalog_{package}")
+    pipette = rline_catalog
     model = pipette.RLineModel.UL_50_1000
     spec = pipette.RLINE_SPECS[model]
     if (
@@ -43,7 +46,7 @@ def _check_rline_50_1000(label: str, contract: dict, effector: str, errors: list
         errors.append(f"{label}: {effector} is not 2.5 uL per step")
     if effector != "rline-50-1000-multistep":
         return
-    if pipette.SELECTED_MODEL is not model:
+    if _locked_model(effector) != "RLineModel.UL_50_1000":
         errors.append(f"{label}: {effector} is not locked to the 50-1000 body")
     body = contract.get("effector", {}).get(effector)
     if not isinstance(body, dict):
@@ -98,13 +101,11 @@ def _check_one(label: str, contract: dict, errors: list[str]) -> None:
     if not gantry_name:
         errors.append(f"{label}: gantry is empty")
         return
-    gantry_dir = ROOT / "gantries" / str(gantry_name)
-    if not gantry_dir.is_dir():
+    if str(gantry_name) not in frames.GANTRIES:
         errors.append(f"{label}: missing gantry {gantry_name}")
         return
-    module_name = "gantry_" + str(gantry_name).split("-")[0]
-    frame = load_module(gantry_dir / "src" / module_name / "frame.py", f"{module_name}.frame")
-    placeholders = tomllib.loads((gantry_dir / "placeholders.toml").read_text())
+    frame = frames.load(str(gantry_name))
+    placeholders = frames.placeholders(str(gantry_name))
     for command in placeholders.get("commands", {}):
         filled = contract.get("commands", {}).get(command)
         if not filled or not str(filled.get("summary", "")).strip():
@@ -118,7 +119,7 @@ def _check_one(label: str, contract: dict, errors: list[str]) -> None:
         errors.append(f"{label}: effectors must be a list")
         effectors = []
     for effector in effectors:
-        if not (ROOT / "end-effectors" / str(effector)).is_dir():
+        if str(effector) not in end_effector.EFFECTORS:
             errors.append(f"{label}: missing effector {effector}")
     for effector in effectors:
         if effector in {"rline-50-1000", "rline-50-1000-multistep"}:

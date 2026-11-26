@@ -1,6 +1,6 @@
 # Building a qubot edge
 
-This repository is the reference an agent uses to build a new qubot edge. It holds the ingredients: gantries, end effectors, transport families, geometry, and the edge kit. It does not hold a running edge, a host `.env`, or a site's machine id.
+This repository is the reference an agent uses to build a new qubot edge. It holds the ingredients as one Python package, `qubot`: gantry transports and frames, end effectors, geometry, and the edge kit. It does not hold a running edge, a host `.env`, or a site's machine id.
 
 Read [MODULARIZATION.md](../MODULARIZATION.md) for the split, and [CONTRACT.md](../CONTRACT.md) for the blank form. Record ingredient changes in [CHANGELOG.md](../CHANGELOG.md).
 
@@ -22,7 +22,7 @@ One qubot is one directory directly under the site monorepo's `edges/` directory
 
 On IMRE that is `puda-imre-mof/edges/pipqubot-xl-edge/` and `puda-imre-mof/edges/syringequbot-edge/`. Another site gets its own monorepo and only its own qubot directories.
 
-`vendor/` is a snapshot of the packages named by that edge's contract. The site edge builds from its own directory. It does not need this checkout at image-build time.
+`vendor/qubot` is a snapshot of the `qubot` package; `vendor/REVISION` names the gantry and effector modules that edge's contract uses. List `qubot` in the edge's `[project].dependencies`. The site edge builds from its own directory. It does not need this checkout at image-build time.
 
 ## Steps
 
