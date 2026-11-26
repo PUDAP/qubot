@@ -2,8 +2,9 @@
 
 Driver, geometry, labware, and skill changes are recorded here. A site edge does not append to this file; it pins the qubot version it uses.
 
-## 2026-11-26
+## 0.1.0 - 2026-11-26
 
+- First PyPI release, `qubot-drivers` 0.1.0. Publishing runs from `.github/workflows/publish.yml` on a GitHub release via PyPI trusted publishing.
 - One package replaces the 18 workspace packages. It is distributed as `qubot-drivers` (`qubot` is taken on PyPI) and imported as `qubot`. One root `pyproject.toml`; code is under `src/qubot/`.
 - Imports: `from qubot.gantry import Frame, GrblHALController, GrblWSController, RepRapHTTPController` and `from qubot.end_effector import Capper, RotatingVacuumGripper, Chamber, LedBoard, ParallelFingers, narrow_z, RLineModel`, loaded on first use. The rLine pipettes are modules: `from qubot.end_effector import rline_50_1000, rline_50_1000_multistep`. Defining modules such as `qubot.gantry.grbl` still import. `qubot.geometry` and `qubot.edgekit` are unchanged. Old names such as `gantry_005`, `rline_50_1000`, and `qubot_geometry` are gone.
 - No machine settings in the package. Each edge imports the drivers and configures them in its own code. Gantry frames `001` to `009`, their command lists, and effector calibration moved to starting-point PUDA `driver.py` files in `skills/qubot-driver/references/examples/`, one per machine (`claw_machine.py`, `dancefloor.py`, …). Each has the constants, a `Driver` that takes ports from `main.py`, `shutdown`/`estop` hooks, and basic `home`/`move_*`/`get_position` commands.

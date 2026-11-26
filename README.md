@@ -6,14 +6,14 @@ One Python package with the gantry and end-effector drivers for building a PUDA 
 pip install qubot-drivers        # or: uv add qubot-drivers
 ```
 
-It holds no machine settings: each edge imports the drivers it needs and configures them in its own code. Nothing in this repository is a running edge. Agents start from the [qubot-driver skill](skills/qubot-driver/SKILL.md). The [design](#design) section explains the split. Changes are recorded in [CHANGELOG.md](CHANGELOG.md).
+It holds no machine settings: each edge imports the drivers it needs and configures them in its own code. Nothing in this repository is a running edge. Agents start from the [qubot-driver skill](https://github.com/PUDAP/qubot/blob/main/skills/qubot-driver/SKILL.md). The [design](#design) section explains the split. Changes are recorded in [CHANGELOG.md](https://github.com/PUDAP/qubot/blob/main/CHANGELOG.md).
 
 - No `MACHINE_ID`, NATS servers, host addresses, serial-device paths, frame limits, calibration, container config, or `.env`. A site edge's `.env.example` stays placeholders.
 - Code lives in `src/qubot/`. One `pyproject.toml` at the root; gantries and end effectors are modules, not separate packages.
 - `qubot.gantry` has the controllers (`GrblHALController`, `GrblWSController`, `RepRapHTTPController`), shared by every gantry, and `Frame`, which holds one machine's axes, hardware limits, default deck, and optional home order and firmware checks. It refuses limits outside the frame.
 - `qubot.end_effector` has one driver per toolhead (`RotatingVacuumGripper`, `Chamber`, …). Calibration (servo pulses, waypoints, delays, force corrections, pipette pacing) is a constructor argument, and bad values raise.
 - `qubot.geometry` has `Position`. `qubot.labware` has `StandardLabware` and `Deck`, a few bundled labware definitions, and lets each edge add its own definitions (see [Labware](#labware)).
-- The [qubot-driver skill](skills/qubot-driver/SKILL.md#reference-drivers) has a starting-point `driver.py` for each known machine, with the values from the machines built so far.
+- The [qubot-driver skill](https://github.com/PUDAP/qubot/blob/main/skills/qubot-driver/SKILL.md#reference-drivers) has a starting-point `driver.py` for each known machine, with the values from the machines built so far.
 - Finished edges are not stored on `main`. For an edge built before the qubot modularization and the monorepo restructuring, use the `legacy-edges` branch.
 
 A qubot edge's `driver.py` imports what it carries and configures it:
@@ -118,7 +118,7 @@ Definitions are Opentrons-style JSON (`wells`, `ordering`, `dimensions`) plus `i
 
 ## Build a site edge
 
-Follow the [qubot-driver skill](skills/qubot-driver/SKILL.md): answer its edge checklist, scaffold from [edge-python-template](https://github.com/PUDAP/edge-python-template), pin `qubot-drivers` (a release, or `qubot-drivers @ git+https://github.com/PUDAP/qubot@<ref>`), and start `driver.py` from the matching reference driver. The edge lives in the site monorepo's `edges/`, not in this repository. Build only when that machine is allowed to move.
+Follow the [qubot-driver skill](https://github.com/PUDAP/qubot/blob/main/skills/qubot-driver/SKILL.md): answer its edge checklist, scaffold from [edge-python-template](https://github.com/PUDAP/edge-python-template), pin `qubot-drivers` (a release, or `qubot-drivers @ git+https://github.com/PUDAP/qubot@<ref>`), and start `driver.py` from the matching reference driver. The edge lives in the site monorepo's `edges/`, not in this repository. Build only when that machine is allowed to move.
 
 ## Offline checks
 

@@ -3,12 +3,29 @@ name = "qubot-drivers"
 version = "0.1.0"
 description = "Qubot gantry and end-effector drivers for PUDA edges."
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "PUDAP" }]
+keywords = ["puda", "qubot", "gantry", "grbl", "grblhal", "reprap", "lab automation", "pipette"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering",
+    "Topic :: System :: Hardware :: Hardware Drivers",
+]
 requires-python = ">=3.11"
 dependencies = [
     "pyserial~=3.5",
     "websocket-client>=1.8.0",
 ]
+
+[project.urls]
+Homepage = "https://docs.puda.co"
+Repository = "https://github.com/PUDAP/qubot"
+Changelog = "https://github.com/PUDAP/qubot/blob/main/CHANGELOG.md"
 
 [build-system]
 requires = ["hatchling>=1.26"]
