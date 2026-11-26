@@ -1,5 +1,5 @@
 [project]
-name = "qubot"
+name = "qubot-drivers"
 version = "0.1.0"
 description = "Qubot gantry and end-effector drivers for PUDA edges."
 readme = "README.md"

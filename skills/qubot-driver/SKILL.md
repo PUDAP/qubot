@@ -41,7 +41,7 @@ One qubot is one directory directly under the site monorepo's `edges/` directory
 <puda-site>/edges/<one-qubot>/
   driver.py        # qubot imports, FRAME + calibration constants, Driver with @command methods
   main.py          # Config (MACHINE_ID, NATS_SERVERS, ports) -> Driver(...)
-  pyproject.toml   # depends on qubot, pinned
+  pyproject.toml   # depends on qubot-drivers, pinned
   uv.lock
   Dockerfile
   compose.yml
@@ -54,7 +54,7 @@ On IMRE that is `puda-imre-mof/edges/pipqubot-xl-edge/` and `puda-imre-mof/edges
 
 Answer every item before scaffolding. The answers go into the edge's `driver.py` (constants, `@safety`) and `main.py` (`Config` fields). Start from the matching reference driver if there is one.
 
-- qubot version or git ref the edge pins:
+- `qubot-drivers` version or git ref the edge pins:
 - Gantry controller (`GrblHALController`, `GrblWSController`, `RepRapHTTPController`) and its port or host `Config` field:
 - `Frame`: axes, hardware limits, default deck, home order, expected firmware identity and settings:
 - Soft limits inside the frame, or none:
@@ -71,7 +71,7 @@ Answer every item before scaffolding. The answers go into the edge's `driver.py`
 ## Steps
 
 1. Answer every item in the edge checklist above. Scaffold the service from [edge-python-template](https://github.com/PUDAP/edge-python-template) only after that. Keep the existing directory name and `MACHINE_ID`.
-2. Add `qubot` to the edge's `[project].dependencies`, pinned to a release or git ref (`qubot @ git+https://github.com/PUDAP/qubot@<ref>` until it is on PyPI). Run `uv lock`.
+2. Add `qubot-drivers` to the edge's `[project].dependencies`, pinned to a release (`qubot-drivers==<version>`) or a git ref (`qubot-drivers @ git+https://github.com/PUDAP/qubot@<ref>`). Run `uv lock`. The import name stays `qubot`.
 3. Copy the matching `references/examples/<machine>.py` over the template's `driver.py`, or write one the same way. Set `SOFT_LIMITS` and `HOME_ON_STARTUP`, rewrite every `@safety` for this site, and add the machine's own commands.
 4. Add the port and host fields to `Config` in `main.py` and pass them to `Driver(...)`. Leave `.env.example` as placeholders.
 5. Import `driver.py` once offline (`uv run python -c "import driver"`). `Frame` and the effector constructors raise on values outside the frame or bad calibration. Importing opens no port; `Driver(...)` does.

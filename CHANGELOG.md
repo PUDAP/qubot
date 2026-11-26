@@ -4,7 +4,7 @@ Driver, geometry, edgekit, and checklist changes are recorded here. A site edge 
 
 ## 2026-11-26
 
-- One package, `qubot`, replaces the 18 workspace packages. One root `pyproject.toml`; code is under `src/qubot/`.
+- One package replaces the 18 workspace packages. It is distributed as `qubot-drivers` (`qubot` is taken on PyPI) and imported as `qubot`. One root `pyproject.toml`; code is under `src/qubot/`.
 - Imports: `qubot.gantry.grbl`, `qubot.gantry.grbl_ws`, `qubot.gantry.reprap_http`, `qubot.gantry.Frame`, `qubot.end_effector.<name>`, `qubot.geometry`, `qubot.edgekit`. Old names such as `gantry_005`, `rline_50_1000`, and `qubot_geometry` are gone.
 - No machine settings in the package. Each edge imports the drivers and configures them in its own code. Gantry frames `001` to `009`, their command lists, and effector calibration moved to starting-point PUDA `driver.py` files in `skills/qubot-driver/references/examples/`, one per machine (`claw_machine.py`, `dancefloor.py`, …). Each has the constants, a `Driver` that takes ports from `main.py`, `shutdown`/`estop` hooks, and basic `home`/`move_*`/`get_position` commands.
 - `qubot.gantry.Frame` is constructed by the edge. Effector calibration is a constructor argument: `Capper`, `RotatingVacuumGripper`, `Chamber`, `ParallelFingers(corrections=, calibration_factor=)`, and the multistep pipette's `step_resolution` and `response_time_s` (no longer defaulted). `AXIS` and `PORT_ENV` constants are gone; axis and port env names are edge wiring.

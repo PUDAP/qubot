@@ -1,6 +1,12 @@
 # qubot
 
-One Python package, `qubot`, with the gantry and end-effector drivers for building a PUDA qubot edge. It holds no machine settings: each edge imports the drivers it needs and configures them in its own code. Nothing in this repository is a running edge. Agents start from the [qubot-driver skill](skills/qubot-driver/SKILL.md). The [design](#design) section explains the split. Changes are recorded in [CHANGELOG.md](CHANGELOG.md).
+One Python package with the gantry and end-effector drivers for building a PUDA qubot edge. It is published as `qubot-drivers` and imported as `qubot`:
+
+```bash
+pip install qubot-drivers        # or: uv add qubot-drivers
+```
+
+It holds no machine settings: each edge imports the drivers it needs and configures them in its own code. Nothing in this repository is a running edge. Agents start from the [qubot-driver skill](skills/qubot-driver/SKILL.md). The [design](#design) section explains the split. Changes are recorded in [CHANGELOG.md](CHANGELOG.md).
 
 - No `MACHINE_ID`, NATS servers, host addresses, serial-device paths, frame limits, calibration, container config, or `.env`. A site edge's `.env.example` stays placeholders.
 - Code lives in `src/qubot/`. One `pyproject.toml` at the root; gantries and end effectors are modules, not separate packages.
@@ -66,7 +72,7 @@ flowchart TB
   geometry --> config
   subgraph built [site monorepo edges]
     module["edge main.py:<br/>Config with MACHINE_ID, NATS, ports"]
-    edge["edge:<br/>directory name, pinned qubot, local .env"]
+    edge["edge:<br/>directory name, pinned qubot-drivers, local .env"]
     module --> edge
   end
   config --> module
@@ -101,7 +107,7 @@ Lower-level pieces: `qubot.end_effector.satorius` / `satorius_multistep` (`Sator
 
 ## Build a site edge
 
-Follow the [qubot-driver skill](skills/qubot-driver/SKILL.md): answer its edge checklist, scaffold from [edge-python-template](https://github.com/PUDAP/edge-python-template), pin `qubot` (`qubot @ git+https://github.com/PUDAP/qubot@<ref>` until it is on PyPI), and start `driver.py` from the matching reference driver. The edge lives in the site monorepo's `edges/`, not in this repository. Build only when that machine is allowed to move.
+Follow the [qubot-driver skill](skills/qubot-driver/SKILL.md): answer its edge checklist, scaffold from [edge-python-template](https://github.com/PUDAP/edge-python-template), pin `qubot-drivers` (a release, or `qubot-drivers @ git+https://github.com/PUDAP/qubot@<ref>`), and start `driver.py` from the matching reference driver. The edge lives in the site monorepo's `edges/`, not in this repository. Build only when that machine is allowed to move.
 
 ## Offline checks
 
