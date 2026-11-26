@@ -8,15 +8,18 @@ One Python package, `qubot`, with the gantry and end-effector drivers for buildi
 - `qubot.gantry.Frame` holds one machine's axes, hardware limits, default deck, and optional home order and firmware checks. It refuses limits outside the frame.
 - `qubot.end_effector.<name>` is one toolhead driver. Calibration (servo pulses, waypoints, delays, force corrections, pipette pacing) is a constructor argument, and bad values raise.
 - `qubot.geometry` is the shared position, deck, and labware module. `qubot.edgekit.require_filled_env` refuses to start an edge until a filled local `.env` exists.
-- [docs/examples/](docs/examples/) has one Python file per known machine with the values from the machines built so far. Safety text, confirm, and startup homing are blank there; each edge fills them.
+- The [qubot-driver skill](skills/qubot-driver/SKILL.md#reference-drivers) has a starting-point `driver.py` for each known machine, with the values from the machines built so far.
 - Finished edges are not stored on `main`. For an edge built before the qubot modularization and the monorepo restructuring, use the `legacy-edges` branch.
 
+A qubot edge's `driver.py` imports what it carries and configures it:
+
 ```python
-import os
+from puda import command, safety
 
 from qubot.gantry import Frame
 from qubot.gantry.grbl import GrblHALController
 from qubot.end_effector.rotating_vacuum_gripper import RotatingVacuumGripper
+from qubot.geometry import Position
 
 FRAME = Frame(axes=("X", "Y", "Z"),
               hardware_limits={"X": (0, 830), "Y": (-280, 0), "Z": (-240, 0)},
@@ -24,16 +27,29 @@ FRAME = Frame(axes=("X", "Y", "Z"),
 GRIPPER = RotatingVacuumGripper(axis="C", yaw_pulses=[(0, 14), (-90, 124), (-180, 244)],
                                 rotation_min_z_mm=-5, vacuum_on_delay_s=3, vacuum_off_delay_s=3)
 
-def connect_gantry() -> GrblHALController:
-    gantry = GrblHALController(port_name=os.environ["GANTRY_PORT"])
-    gantry.connect()
-    FRAME.apply_axis_limits(gantry)
-    return gantry
+
+class Driver:
+    """Claw machine: 8-unit grblHAL pick-and-place gantry with a rotating vacuum gripper."""
+
+    def __init__(self, gantry_port: str) -> None:
+        self._gantry = GrblHALController(port_name=gantry_port)
+        self._gantry.connect()
+        FRAME.apply_axis_limits(self._gantry)
+
+    def estop(self) -> bool:
+        self._gantry.halt()
+        return True
+
+    @command
+    @safety(summary="Collision risk from gantry motion.", hazards=["collision"], confirm=True)
+    def move_absolute(self, x: float | None = None, y: float | None = None, z: float | None = None) -> dict:
+        """Move to an absolute position in mm."""
+        return self._gantry.move_absolute(Position(x=x, y=y, z=z)).to_dict()
 ```
 
 ## Design
 
-A qubot is one gantry plus the end effectors mounted on it, and that combination changes. The syringequbot frame (`002-1unit-reprap-http`) was the capper first; mounting the capper again is an import in that edge's `hardware.py`, not a copy of another edge. So qubot stores only drivers that can be mixed, and each edge in the site monorepo picks and configures its own.
+A qubot is one gantry plus the end effectors mounted on it, and that combination changes. The syringequbot frame (`002-1unit-reprap-http`) was the capper first; mounting the capper again is an import in that edge's `driver.py`, not a copy of another edge. So qubot stores only drivers that can be mixed, and each edge in the site monorepo picks and configures its own.
 
 ```mermaid
 flowchart TB
@@ -43,14 +59,14 @@ flowchart TB
     effector["qubot.end_effector.name:<br/>protocol, takes calibration as arguments"]
     geometry["qubot.geometry:<br/>Position, labware definitions"]
   end
-  config["edge hardware.py:<br/>Frame values, safety text, effector calibration; see docs/examples"]
+  config["edge driver.py:<br/>Frame and calibration constants, Driver with @command and @safety"]
   transport --> config
   gantry --> config
   effector --> config
   geometry --> config
   subgraph built [site monorepo edges]
-    module["edge driver:<br/>composed commands, soft limits, active deck"]
-    edge["edge:<br/>directory name, MACHINE_ID, pinned qubot, local .env"]
+    module["edge main.py:<br/>Config with MACHINE_ID, NATS, ports"]
+    edge["edge:<br/>directory name, pinned qubot, local .env"]
     module --> edge
   end
   config --> module
@@ -85,29 +101,7 @@ Lower-level pieces: `qubot.end_effector.satorius` / `satorius_multistep` (`Sator
 
 ## Build a site edge
 
-Answer the edge checklist in the [qubot-driver skill](skills/qubot-driver/SKILL.md#edge-checklist), then scaffold the edge service from [edge-python-template](https://github.com/PUDAP/edge-python-template). Keep the edge directory out of this repository and put it in the site monorepo's `edges/`.
-
-Add qubot to the edge's dependencies, pinned to a release or git ref, for example `qubot @ git+https://github.com/PUDAP/qubot@<ref>`, and run `uv lock`. Copy the matching file from `docs/examples/` into the edge as its hardware config and fill the blanks. Build only when that edge is allowed to move.
-
-Attaching another toolhead is a code change in the edge: import its driver, construct it with that machine's calibration, and rebuild.
-
-`.env.example` is placeholders only. If the user supplies this host's `.env`, copy it to `<edge>/.env` and `chmod 600` it; never copy `.env.example`. Otherwise the edge refuses to start until `.env` exists and its required values are filled.
-
-## Example machines
-
-Reference hardware configs in `docs/examples/`. Gantry labels are `{serial}-{size}-{bus}`; serials `001` to `004` are provisional, not recorded asset tags.
-
-| Example | Gantry | Notes |
-|---|---|---|
-| [`miniqubot.py`](docs/examples/miniqubot.py) | `001-1unit-grbl-serial` |  |
-| [`syringequbot.py`](docs/examples/syringequbot.py) | `002-1unit-reprap-http` | Same frame was the capper before. |
-| [`pipqubot_mof.py`](docs/examples/pipqubot_mof.py) | `003-2unit-grbl-serial` |  |
-| [`pipqubot_xl.py`](docs/examples/pipqubot_xl.py) | `004-4unit-reprap-http` |  |
-| [`claw_machine.py`](docs/examples/claw_machine.py) | `005-8unit-grblhal-serial` | Pick-and-place. |
-| [`dancefloor.py`](docs/examples/dancefloor.py) | `006-1unit-grblhal-serial` | Vacuum chamber. |
-| [`overkill2.py`](docs/examples/overkill2.py) | `007-2unit-grblhal-serial` | Liquid handling, pipette gantry. |
-| [`photoreactor.py`](docs/examples/photoreactor.py) | `008-1unit-grblhal-serial` | UV qubot. |
-| [`eis_qubot.py`](docs/examples/eis_qubot.py) | `009-1unit-grblhal-serial` | Electrochemical station. |
+Follow the [qubot-driver skill](skills/qubot-driver/SKILL.md): answer its edge checklist, scaffold from [edge-python-template](https://github.com/PUDAP/edge-python-template), pin `qubot` (`qubot @ git+https://github.com/PUDAP/qubot@<ref>` until it is on PyPI), and start `driver.py` from the matching reference driver. The edge lives in the site monorepo's `edges/`, not in this repository. Build only when that machine is allowed to move.
 
 ## Offline checks
 

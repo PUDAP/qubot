@@ -18,7 +18,7 @@ build-backend = "hatchling.build"
 packages = ["src/qubot"]
 
 [dependency-groups]
-dev = ["pytest>=9.0.2"]
+dev = ["pytest>=9.0.2", "puda>=0.0.23"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
