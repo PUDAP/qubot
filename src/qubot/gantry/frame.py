@@ -1,17 +1,17 @@
 """Frame facts for one gantry, configured by the edge that drives it.
 
-qubot ships no machine values. An edge builds its frame from its contract::
+qubot ships no machine values. An edge constructs its frame in its own code::
 
-    from qubot.gantry.frame import Frame
+    from qubot.gantry import Frame
 
-    frame = Frame.from_dict(contract["frame"])
-    frame.apply_axis_limits(controller, contract.get("soft_limits"))
+    FRAME = Frame(axes=("X", "Y", "Z"), hardware_limits={"X": (0, 830), ...})
+    FRAME.apply_axis_limits(controller, SOFT_LIMITS)
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Mapping, Optional
+from typing import Mapping, Optional
 
 Limits = Mapping[str, tuple[float, float]]
 
@@ -58,27 +58,13 @@ class Frame:
             {int(key): float(value) for key, value in self.required_settings.items()},
         )
 
-    @classmethod
-    def from_dict(cls, data: Mapping[str, Any]) -> "Frame":
-        """Build a frame from a contract ``[frame]`` table."""
-        known = {"axes", "hardware_limits", "default_deck", "home_order", "expected_identity", "required_settings"}
-        unknown = set(data) - known
-        if unknown:
-            raise ValueError(f"unknown frame keys: {sorted(unknown)}")
-        values = dict(data)
-        values["axes"] = tuple(values["axes"])
-        values["hardware_limits"] = {axis: tuple(bounds) for axis, bounds in values["hardware_limits"].items()}
-        if values.get("home_order") is not None:
-            values["home_order"] = tuple(values["home_order"])
-        return cls(**values)
-
     def check_limits(self, limits: Optional[Limits] = None) -> dict[str, tuple[float, float]]:
         """Return limits that sit inside this frame. None returns the hardware limits.
 
         Raises:
             ValueError: If an axis is not on the frame or a bound is outside it.
         """
-        if limits is None or limits == "none":
+        if limits is None:
             return dict(self.hardware_limits)
         checked: dict[str, tuple[float, float]] = {}
         for axis, bounds in limits.items():

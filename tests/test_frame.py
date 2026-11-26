@@ -17,16 +17,15 @@ def frame(**overrides):
     return Frame(**values)
 
 
-def test_from_dict_reads_a_contract_table():
-    f = Frame.from_dict(
-        {
-            "axes": ["X", "Y", "Z"],
-            "hardware_limits": {"X": [0, 830], "Y": [-280, 0], "Z": [-240, 0]},
-            "default_deck": {"rows": 4, "cols": 8},
-            "home_order": ["Z", "X", "Y"],
-            "required_settings": {"130": 175},
-        }
+def test_frame_normalizes_its_values():
+    f = Frame(
+        axes=["X", "Y", "Z"],
+        hardware_limits={"X": [0, 830], "Y": [-280, 0], "Z": [-240, 0]},
+        default_deck={"rows": 4, "cols": 8},
+        home_order=["Z", "X", "Y"],
+        required_settings={"130": 175},
     )
+    assert f.axes == ("X", "Y", "Z")
     assert f.hardware_limits["X"] == (0.0, 830.0)
     assert f.home_order == ("Z", "X", "Y")
     assert f.required_settings == {130: 175.0}
@@ -40,8 +39,6 @@ def test_bad_frames_are_refused():
         frame(hardware_limits={"X": (1, 0), "Y": (-28, 0), "Z": (0, 0)})
     with pytest.raises(ValueError):
         frame(home_order=("A",))
-    with pytest.raises(ValueError):
-        Frame.from_dict({"axes": ["X"], "hardware_limits": {"X": [0, 1]}, "limits": {}})
 
 
 def test_apply_skips_a_zero_travel_axis():

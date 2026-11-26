@@ -29,7 +29,7 @@ def connect(
     """Open this physical 50-1000 uL body. The model is not a caller choice.
 
     ``step_resolution`` and ``response_time_s`` are this pipette's calibrated
-    multistep limits, from the edge contract.
+    multistep limits, set in the edge's own config.
     """
     return SatoriusController(
         port_name=port_name,

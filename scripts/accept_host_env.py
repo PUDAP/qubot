@@ -1,7 +1,7 @@
 """Copy a user-supplied .env into one site edge directory.
 
 The example file stays placeholders. The copy is local and must stay gitignored.
-A contract file is not changed. This does not start an edge.
+This does not start an edge.
 """
 
 from __future__ import annotations

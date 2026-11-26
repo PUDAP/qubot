@@ -3,7 +3,7 @@
 - ``qubot.gantry.grbl``: ``GrblHALController`` over serial (grbl and grblHAL).
 - ``qubot.gantry.grbl_ws``: ``GrblWSController`` over the GRBL WebSocket.
 - ``qubot.gantry.reprap_http``: ``RepRapHTTPController`` over RepRap HTTP.
-- ``qubot.gantry.frame``: ``Frame``, built by the edge from its contract.
+- ``qubot.gantry.frame``: ``Frame``, constructed by the edge with its machine values.
 """
 
 from .frame import Frame

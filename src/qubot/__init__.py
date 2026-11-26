@@ -6,8 +6,8 @@ Import the part you need, for example::
     from qubot.gantry.grbl import GrblHALController
     from qubot.end_effector.rline_50_1000 import connect
 
-qubot holds no machine settings. Frame limits, decks, calibration, and ports are
-configured by each edge, from its contract. Importing ``qubot`` itself does not
+qubot holds no machine settings. Each edge imports the drivers it needs and
+configures frame limits, decks, calibration, and ports in its own code. Importing ``qubot`` itself does not
 open a port or import ``serial``.
 """
 
