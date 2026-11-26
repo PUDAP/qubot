@@ -10,7 +10,7 @@ It holds no machine settings: each edge imports the drivers it needs and configu
 
 - No `MACHINE_ID`, NATS servers, host addresses, serial-device paths, frame limits, calibration, container config, or `.env`. A site edge's `.env.example` stays placeholders.
 - Code lives in `src/qubot/`. One `pyproject.toml` at the root; gantries and end effectors are modules, not separate packages.
-- `qubot.gantry` has the controllers (`GrblHALController`, `GrblWSController`, `RepRapHTTPController`), shared by every gantry, and `Frame`, which holds one machine's axes, hardware limits, default deck, and optional home order and firmware checks. It refuses limits outside the frame.
+- `qubot.gantry` has the controllers (`GrblHALController`, `GrblWSController`, `RepRapHTTPController`, `RepRapSerialController`), shared by every gantry, and `Frame`, which holds one machine's axes, hardware limits, default deck, and optional home order and firmware checks. It refuses limits outside the frame.
 - `qubot.end_effector` has one driver per toolhead (`RotatingVacuumGripper`, `Chamber`, …). Calibration (servo pulses, waypoints, delays, force corrections, pipette pacing) is a constructor argument, and bad values raise.
 - `qubot.geometry` has `Position`. `qubot.labware` has `StandardLabware` and `Deck`, a few bundled labware definitions, and lets each edge add its own definitions (see [Labware](#labware)).
 - The [qubot-driver skill](https://github.com/PUDAP/qubot/blob/main/skills/qubot-driver/SKILL.md#reference-drivers) has a starting-point `driver.py` for each known machine, with the values from the machines built so far.
@@ -53,7 +53,7 @@ class Driver:
 
 ## Design
 
-A qubot is one gantry plus the end effectors mounted on it, and that combination changes. The syringequbot frame (`002-1unit-reprap-http`) was the capper first; mounting the capper again is an import in that edge's `driver.py`, not a copy of another edge. So qubot stores only drivers that can be mixed, and each edge in the site monorepo picks and configures its own.
+A qubot is one gantry plus the end effectors mounted on it, and that combination changes. The syringequbot gantry was the capper first; mounting the capper again is an import in that edge's `driver.py`, not a copy of another edge. So qubot stores only drivers that can be mixed, with no numbered gantries or per-machine values, and each edge in the site monorepo picks and configures its own.
 
 ```mermaid
 flowchart TB
@@ -84,6 +84,7 @@ flowchart TB
 |---|---|---|---|
 | `GrblHALController` | `from qubot.gantry import GrblHALController` | GRBL 1.1 and grblHAL over USB serial. Feed-hold with realtime `!`. | miniqubot, pipqubot-mof, claw-machine, dancefloor, overkill2, photoreactor, eis-qubot |
 | `GrblWSController` | `from qubot.gantry import GrblWSController` | GRBL over WebSocket (`ws://<host>:81`). | grblHAL gantries with a network board |
+| `RepRapSerialController` | `from qubot.gantry import RepRapSerialController` | RepRapFirmware over USB serial (G-code, `M114` position, `M400` move wait). | first (puda-eletrochem) |
 | `RepRapHTTPController` | `from qubot.gantry import RepRapHTTPController` | RepRapFirmware over HTTP (`rr_gcode`, `rr_status`). Supports `set_pin`. | syringequbot, pipqubot-xl |
 
 Each controller is paired with a `Frame` (`from qubot.gantry import Frame`) that holds the machine's axes, travel, and deck. The defining modules (`qubot.gantry.grbl`, …) still work as import paths; the short form is preferred.

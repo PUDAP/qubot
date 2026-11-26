@@ -76,6 +76,13 @@ class SatoriusController(SerialController):
         self._volume: int = 0
         self.model = model
         self.spec: RLineSpec = spec
+        self._last_sent_frame: Optional[bytes] = None
+
+    def _send_command(self, command: str) -> None:
+        # Remember the exact wire bytes so _read_response can recognise a
+        # byte-identical echo (this bench's drive only echoes, never replies).
+        self._last_sent_frame = command.encode("utf-8")
+        super()._send_command(command)
 
     def _steps_for_volume(self, amount: int, command_name: str) -> int:
         steps = int(amount / self.spec.microliters_per_step)
@@ -137,6 +144,13 @@ class SatoriusController(SerialController):
             time.sleep(0.005)
         if not raw or raw.startswith(b"\t"):
             raise SatoriusDeviceError(f"Incomplete rLine response before deadline: {raw!r}")
+        sent = self._last_sent_frame or b""
+        if sent and raw.startswith(sent):
+            remainder = raw[len(sent):].strip(b"\r\n")
+            if not remainder:
+                self._logger.debug("<- Echo-only response %r; drive does not reply", raw)
+                return "ok"
+            raw = remainder
         try:
             text = raw.rstrip(b"\r\n").decode("ascii")
         except UnicodeDecodeError as exc:
@@ -151,6 +165,10 @@ class SatoriusController(SerialController):
         deadline = time.monotonic() + (self._timeout if timeout is None else timeout)
         while time.monotonic() < deadline:
             response = self.execute(command="DS", timeout=max(0.001, deadline - time.monotonic()))
+            if response == "ok":
+                # Echo-only drive: no status channel, so assume completion.
+                self._logger.debug("Drive is echo-only; skipping DS completion poll")
+                return
             if response == "1ds0":
                 return
             if response not in {"1ds1", "1ds2", "1ds4", "1ds6"}:

@@ -1,4 +1,4 @@
-"""dancefloor: gantry 006-1unit-grblhal-serial.
+"""dancefloor: 1-unit, grblHAL over serial (GrblHALController) gantry.
 
 Starting-point driver.py for this machine. Copy it into the edge, pass the
 ports from main.py's Config, review every @safety text, and add the
