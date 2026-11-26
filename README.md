@@ -1,6 +1,6 @@
 # qubot
 
-One Python package, `qubot`, with the gantry and end-effector drivers for building a PUDA qubot edge. It holds no machine settings: each edge imports the drivers it needs and configures them in its own code. Nothing in this repository is a running edge. Agents start from the [qubot-driver skill](skills/qubot-driver/SKILL.md). The split is explained in [MODULARIZATION.md](MODULARIZATION.md). Changes are recorded in [CHANGELOG.md](CHANGELOG.md).
+One Python package, `qubot`, with the gantry and end-effector drivers for building a PUDA qubot edge. It holds no machine settings: each edge imports the drivers it needs and configures them in its own code. Nothing in this repository is a running edge. Agents start from the [qubot-driver skill](skills/qubot-driver/SKILL.md). The [design](#design) section explains the split. Changes are recorded in [CHANGELOG.md](CHANGELOG.md).
 
 - No `MACHINE_ID`, NATS servers, host addresses, serial-device paths, frame limits, calibration, container config, or `.env`. A site edge's `.env.example` stays placeholders.
 - Code lives in `src/qubot/`. One `pyproject.toml` at the root; gantries and end effectors are modules, not separate packages.
@@ -29,6 +29,31 @@ def connect_gantry() -> GrblHALController:
     gantry.connect()
     FRAME.apply_axis_limits(gantry)
     return gantry
+```
+
+## Design
+
+A qubot is one gantry plus the end effectors mounted on it, and that combination changes. The syringequbot frame (`002-1unit-reprap-http`) was the capper first; mounting the capper again is an import in that edge's `hardware.py`, not a copy of another edge. So qubot stores only drivers that can be mixed, and each edge in the site monorepo picks and configures its own.
+
+```mermaid
+flowchart TB
+  subgraph sources [qubot]
+    transport["qubot.gantry:<br/>grbl, grbl_ws, reprap_http controllers"]
+    gantry["qubot.gantry.Frame:<br/>axes, limit checks, deck slots"]
+    effector["qubot.end_effector.name:<br/>protocol, takes calibration as arguments"]
+    geometry["qubot.geometry:<br/>Position, labware definitions"]
+  end
+  config["edge hardware.py:<br/>Frame values, safety text, effector calibration; see docs/examples"]
+  transport --> config
+  gantry --> config
+  effector --> config
+  geometry --> config
+  subgraph built [site monorepo edges]
+    module["edge driver:<br/>composed commands, soft limits, active deck"]
+    edge["edge:<br/>directory name, MACHINE_ID, pinned qubot, local .env"]
+    module --> edge
+  end
+  config --> module
 ```
 
 ## Supported hardware
@@ -66,7 +91,7 @@ Add qubot to the edge's dependencies, pinned to a release or git ref, for exampl
 
 Attaching another toolhead is a code change in the edge: import its driver, construct it with that machine's calibration, and rebuild.
 
-`.env.example` is placeholders only. If the user supplies this host's `.env`, copy it with `python3 scripts/accept_host_env.py path/to/edge path/to.env`. Otherwise the edge refuses to start until `.env` exists and its required values are filled.
+`.env.example` is placeholders only. If the user supplies this host's `.env`, copy it to `<edge>/.env` and `chmod 600` it; never copy `.env.example`. Otherwise the edge refuses to start until `.env` exists and its required values are filled.
 
 ## Example machines
 

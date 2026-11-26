@@ -7,7 +7,7 @@ description: Build or update a qubot edge's hardware with the qubot driver packa
 
 `qubot` is one Python package of gantry controllers, the `Frame` type, end-effector drivers, geometry, and the edge kit. It holds no machine values. Each edge imports the drivers it carries and sets its frame limits, calibration, and wiring in its own code. This repository does not hold a running edge, a host `.env`, or a site's machine id. For NATS commands, decorators, and `driver.py`/`main.py`, use the `puda-edge` skill.
 
-Supported controllers and end effectors are listed in the [README](../../README.md#supported-hardware). Reference configs for known machines are in [docs/examples/](../../docs/examples/), one file per machine. Read [MODULARIZATION.md](../../MODULARIZATION.md) for the split. Record driver changes in [CHANGELOG.md](../../CHANGELOG.md).
+Supported controllers and end effectors are listed in the [README](../../README.md#supported-hardware). Reference configs for known machines are in [docs/examples/](../../docs/examples/), one file per machine. The README's [design](../../README.md#design) section explains the split. Record driver changes in [CHANGELOG.md](../../CHANGELOG.md).
 
 ## Where a finished edge lives
 
@@ -55,4 +55,4 @@ Answer every item before scaffolding. The answers go into the edge's own code, u
 
 Attaching another toolhead is an edit to `hardware.py` and `driver.py`, then a rebuild.
 
-`.env.example` stays placeholders. If the user supplies this host's `.env`, copy it with `python3 scripts/accept_host_env.py <edge-directory> <path>`. Otherwise leave `.env` absent; the edge refuses to start until it is filled (`qubot.edgekit.require_filled_env`).
+`.env.example` stays placeholders. If the user supplies this host's `.env`, copy it to `<edge>/.env` and `chmod 600` it; never copy `.env.example`. Otherwise leave `.env` absent; the edge refuses to start until it is filled (`qubot.edgekit.require_filled_env`).
