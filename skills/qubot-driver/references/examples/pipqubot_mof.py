@@ -9,11 +9,14 @@ Commands the earlier edge advertised: `home`, `move_to_well`,
 `aspirate_from`, `dispense_to`, `blowout`.
 """
 
+from pathlib import Path
+
 from puda import command, safety
 
 from qubot.gantry import Frame, GrblHALController
 from qubot.end_effector import rline_50_1000
 from qubot.geometry import Position
+from qubot.labware import Deck, get_available_labware
 
 FRAME = Frame(
     axes=('X', 'Y', 'Z'),
@@ -26,6 +29,10 @@ SOFT_LIMITS = None
 
 # Review per edge.
 HOME_ON_STARTUP = False
+
+# The edge's own labware definitions (<name>.json), searched before the bundled
+# ones. See references/labware/vial_rack_2x2.json in the qubot-driver skill.
+LABWARE_DIR = Path(__file__).resolve().parent / "labware"
 
 
 class Driver:
@@ -43,6 +50,7 @@ class Driver:
         FRAME.apply_axis_limits(self._gantry, SOFT_LIMITS)
         self._pipette = rline_50_1000.connect(pipette_port)
         self._pipette.connect()
+        self._deck = Deck.from_frame(FRAME, labware_paths=[LABWARE_DIR])
         if HOME_ON_STARTUP:
             self.home()
 
@@ -134,6 +142,42 @@ class Driver:
             ValueError: If the target is outside the axis limits.
         """
         return self._gantry.move_relative(Position(x=x, y=y, z=z)).to_dict()
+
+    @command
+    def list_labware(self) -> dict[str, dict[str, list[str]]]:
+        """Labware this edge can load: its own labware/ folder plus the bundled definitions.
+
+        Returns:
+            dict[str, dict[str, list[str]]]: Labware name to its row and column labels.
+        """
+        return get_available_labware([LABWARE_DIR])
+
+    @command
+    def load_labware(self, slot: str, labware_name: str) -> dict[str, str | None]:
+        """Record which labware sits in a deck slot. Nothing moves.
+
+        Args:
+            slot: Deck slot, for example "A1".
+            labware_name: A name from list_labware, for example "vial_rack_2x2".
+
+        Returns:
+            dict[str, str | None]: The whole deck, slot to labware name.
+
+        Raises:
+            KeyError: If the slot is not on this deck.
+            FileNotFoundError: If no definition has that name.
+        """
+        self._deck.load_labware(slot, labware_name)
+        return self._deck.to_dict()
+
+    @command
+    def get_deck(self) -> dict[str, str | None]:
+        """Current deck layout.
+
+        Returns:
+            dict[str, str | None]: Slot to labware name, None for empty slots.
+        """
+        return self._deck.to_dict()
 
     @command
     def get_position(self) -> dict[str, float]:

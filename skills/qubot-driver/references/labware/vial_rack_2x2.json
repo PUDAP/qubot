@@ -1,0 +1,12 @@
+{
+  "metadata": {"displayName": "2x2 Vial Rack 20 mL", "displayCategory": "tubeRack", "displayVolumeUnits": "µL"},
+  "dimensions": {"xDimension": 60.0, "yDimension": 60.0, "zDimension": 45.0},
+  "ordering": [["A1", "B1"], ["A2", "B2"]],
+  "wells": {
+    "A1": {"x": 15.0, "y": 45.0, "z": 5.0, "depth": 40.0, "diameter": 28.0, "shape": "circular", "totalLiquidVolume": 20000},
+    "B1": {"x": 15.0, "y": 15.0, "z": 5.0, "depth": 40.0, "diameter": 28.0, "shape": "circular", "totalLiquidVolume": 20000},
+    "A2": {"x": 45.0, "y": 45.0, "z": 5.0, "depth": 40.0, "diameter": 28.0, "shape": "circular", "totalLiquidVolume": 20000},
+    "B2": {"x": 45.0, "y": 15.0, "z": 5.0, "depth": 40.0, "diameter": 28.0, "shape": "circular", "totalLiquidVolume": 20000}
+  },
+  "insert_depth": 40.0
+}

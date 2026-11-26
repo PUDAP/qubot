@@ -11,7 +11,7 @@ Supported controllers and end effectors are listed in the [README](../../README.
 
 ## Reference drivers
 
-[references/examples/](references/examples/) has one starting-point `driver.py` per known machine:
+[references/examples/](references/examples/) has one starting-point `driver.py` per known machine, and [references/labware/](references/labware/) has an example custom labware definition (see [Custom labware](#custom-labware)):
 
 | File | Gantry | Toolheads |
 |---|---|---|
@@ -55,22 +55,16 @@ On IMRE that is `puda-imre-mof/edges/pipqubot-xl-edge/` and `puda-imre-mof/edges
 
 Labware that qubot does not bundle goes in the edge's `labware/` folder as `<name>.json`. Loading by name searches the edge's folders first, then the bundled definitions, so a file there can also replace a bundled one with the same name. List what is bundled with `get_available_labware()`.
 
-`edges/<one-qubot>/labware/vial_rack_2x2.json`. Coordinates are mm from the labware's front-left-bottom corner. `x`/`y` are well centers, `z` is the well bottom.
+Copy [references/labware/vial_rack_2x2.json](references/labware/vial_rack_2x2.json) into the edge's `labware/` folder and edit it:
 
-```json
-{
-  "metadata": {"displayName": "2x2 Vial Rack 20 mL", "displayCategory": "tubeRack", "displayVolumeUnits": "µL"},
-  "dimensions": {"xDimension": 60.0, "yDimension": 60.0, "zDimension": 45.0},
-  "ordering": [["A1", "B1"], ["A2", "B2"]],
-  "wells": {
-    "A1": {"x": 15.0, "y": 45.0, "z": 5.0, "depth": 40.0, "diameter": 28.0, "shape": "circular", "totalLiquidVolume": 20000},
-    "B1": {"x": 15.0, "y": 15.0, "z": 5.0, "depth": 40.0, "diameter": 28.0, "shape": "circular", "totalLiquidVolume": 20000},
-    "A2": {"x": 45.0, "y": 45.0, "z": 5.0, "depth": 40.0, "diameter": 28.0, "shape": "circular", "totalLiquidVolume": 20000},
-    "B2": {"x": 45.0, "y": 15.0, "z": 5.0, "depth": 40.0, "diameter": 28.0, "shape": "circular", "totalLiquidVolume": 20000}
-  },
-  "insert_depth": 40.0
-}
+```text
+edges/<one-qubot>/
+  driver.py
+  labware/
+    vial_rack_2x2.json
 ```
+
+Coordinates are mm from the labware's front-left-bottom corner: `x`/`y` are well centers and `z` is the well bottom.
 
 - `ordering` lists wells column by column; `get_available_labware` reads rows and columns from it.
 - `wells.<id>.x/y/z` gives `get_well_position`.
@@ -98,6 +92,8 @@ rack.get_well_position("B2")                             # Position(x=45.0, y=15
 rack = StandardLabware.from_file(LABWARE_DIR / "vial_rack_2x2.json")
 rack = StandardLabware("vial_rack_2x2", search_paths=[LABWARE_DIR])
 ```
+
+[`references/examples/pipqubot_mof.py`](references/examples/pipqubot_mof.py) wires this into a `Driver`: a `labware/` folder next to `driver.py`, a `Deck.from_frame` deck, and `list_labware`, `load_labware`, and `get_deck` commands.
 
 Add the slot's calibrated origin to `get_well_position(...)` to get a machine coordinate. Slot origins are calibrated per edge and kept in `driver.py`, not in the labware file. The template's Dockerfile copies the whole edge directory (`COPY . .`), so `labware/` ships in the image unless `.dockerignore` excludes it.
 
