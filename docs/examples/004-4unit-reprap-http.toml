@@ -1,0 +1,57 @@
+# Example contract for gantry 004-4unit-reprap-http.
+# Used as: pipqubot-xl.
+# Reference values only. A site edge copies this to contracts/<version>.toml,
+# fills every blank, and keeps machine_id and the port env names from its
+# .env.example.
+#
+
+version = "1"
+machine_id = ""
+gantry = "004-4unit-reprap-http"
+effectors = ["rline-50-1000", "a-axis-capper"]
+home_on_startup = ""
+soft_limits = "none"
+
+[frame]
+axes = ["X", "Y", "Z", "A"]
+hardware_limits = { X = [0, 345], Y = [-490, 0], Z = [-170, 0], A = [-170, 0] }
+default_deck = { rows = 4, cols = 4 }
+
+# Safety text and confirm are filled per edge.
+[commands.reconcile_tip_attached]
+summary = ""
+hazards = []
+requires = ""
+forbidden_when = ""
+confirm = ""
+
+[commands.dispense_to_proxy_vial]
+summary = ""
+hazards = []
+requires = ""
+forbidden_when = ""
+confirm = ""
+
+[commands.move_capper]
+summary = ""
+hazards = []
+requires = ""
+forbidden_when = ""
+confirm = ""
+
+[commands.move_to_well]
+summary = ""
+hazards = []
+requires = ""
+forbidden_when = ""
+confirm = ""
+
+# Serial port env: SATORIUS_PORT. Axis: Z.
+[effector.rline-50-1000]
+model = "50-1000"
+
+# Rides gantry axis A. No port of its own.
+[effector.a-axis-capper]
+axis = "A"
+tool_length_mm = 2
+mount_offset_x_mm = 60

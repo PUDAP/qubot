@@ -10,7 +10,7 @@ import re
 import time
 from typing import Dict, Optional
 
-from .rline_pace import RESPONSE_TIME_S, STEP_RESOLUTION, plan_transfer, remaining_pause
+from .rline_pace import plan_transfer, remaining_pause
 from .rline import RLINE_SPECS, RLineModel, RLineSpec
 from ..serialcontroller import SerialController
 
@@ -58,8 +58,8 @@ class SatoriusController(SerialController):
         timeout: int = DEFAULT_TIMEOUT,
         *,
         model: RLineModel,
-        step_resolution: int = STEP_RESOLUTION,
-        response_time_s: float = RESPONSE_TIME_S,
+        step_resolution: int,
+        response_time_s: float,
     ):
         super().__init__(port_name, baudrate, timeout)
         if model is not RLineModel.UL_50_1000:

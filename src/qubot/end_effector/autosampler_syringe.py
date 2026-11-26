@@ -1,11 +1,11 @@
 """Passive syringe. No bus and no port. Liquid handling stays on the separate pump edge.
 
-`syringe_length_mm` for the current IMRE holder is 50 mm. That figure is the syringe plus the vial holder, not the needle alone. With that holder, travel past Z = -125 was observed to knock the needle into the base of the mounted vial holder. This is a clearance observation. It is not an axis limit. The gantry keeps its firmware Z range. Remeasure the 50 mm if the vial holder changes.
+``syringe_length_mm`` is measured per machine and set in the edge contract. It is
+the syringe plus whatever holder it clears, and it narrows downward Z travel. It
+is a clearance figure, not an axis limit; the gantry keeps its firmware Z range.
 """
 
-AXIS = ""
 COMMUNICATION = "none"
-PORT_ENV = ""
 
 
 def narrow_z(z_limits: tuple[float, float], syringe_length_mm: float) -> tuple[float, float]:
@@ -20,4 +20,4 @@ def narrow_z(z_limits: tuple[float, float], syringe_length_mm: float) -> tuple[f
     return (narrowed_low, high)
 
 
-__all__ = ["AXIS", "COMMUNICATION", "PORT_ENV", "narrow_z"]
+__all__ = ["COMMUNICATION", "narrow_z"]

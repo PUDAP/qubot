@@ -35,12 +35,8 @@ def selected_parts(contract: dict) -> list[str]:
 
     sys.path.insert(0, str(ROOT / "src"))
     from qubot.end_effector import EFFECTORS
-    from qubot.gantry.frames import GANTRIES
 
-    gantry_name = str(contract["gantry"])
-    if gantry_name not in GANTRIES:
-        raise SystemExit(f"missing gantry {gantry_name}")
-    parts = [f"gantry {gantry_name} -> qubot.gantry.frames.{GANTRIES[gantry_name]}"]
+    parts = [f"gantry {contract['gantry']} -> qubot.gantry.frame.Frame from [frame]"]
     effectors = contract.get("effectors", [])
     if not isinstance(effectors, list):
         raise SystemExit("effectors must be a list")

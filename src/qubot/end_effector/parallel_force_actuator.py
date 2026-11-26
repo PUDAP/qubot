@@ -1,16 +1,18 @@
-"""Wire protocol and per-channel calibration for the four force actuators.
+"""Wire protocol for parallel force actuators. Calibration is configured by the edge.
 
-Four force actuators, channels 0–3, each on its own serial port at 115200 baud. Port placeholders are `FINGER_1_PORT` through `FINGER_4_PORT`. The stream line is:
+Force actuators, one per serial port at 115200 baud. The stream line is:
 
 ```text
 {target},{speed},{displacement},{end_stop},{value}\r\n
 ```
 
-Home writes `H 0`, waits until the reported displacement is −1.0 mm, disconnects, reconnects, and writes `H 0` again. A move writes `G {mm} {rpm}` with `rpm = int(speed_mm_s * steps_per_second)`. `steps_per_second` is 6400, the actuator default. The pescador YAML does not set it.
+Home writes `H 0`, waits until the reported displacement is −1.0 mm, disconnects, reconnects, and writes `H 0` again. A move writes `G {mm} {rpm}` with `rpm = int(speed_mm_s * steps_per_second)`. `steps_per_second` is 6400, the actuator default.
 
-Travel is −30 mm to 0 mm. Correction is `(raw − b) / a` per channel. Force in newtons is `(corrected − baseline) / 573.2622826433104 × 9.81`.
+Travel defaults to −30 mm to 0 mm. Correction is `(raw − intercept) / slope` per channel. Force in newtons is `(corrected − baseline) / calibration_factor × 9.81`. The edge passes each channel's `(slope, intercept)` and the sensor's `calibration_factor`::
 
-The configured touch thresholds are 30000 in pescador2 and 7500 in the demo. Those are not plausible newtons. Force-threshold stops stay disabled until the edge contract sets `force_threshold_units` to something other than `ASK`. No finger stop command is known, so a gantry emergency stop does not stop these actuators.
+    fingers = ParallelFingers(ports, corrections=[(a0, b0), ...], calibration_factor=...)
+
+Force-threshold stops are not applied here. No finger stop command is known, so a gantry emergency stop does not stop these actuators.
 """
 
 import threading
@@ -18,13 +20,10 @@ import time
 
 import serial
 
-AXIS = ""
 COMMUNICATION = "serial"
-PORT_ENVS = ("FINGER_1_PORT", "FINGER_2_PORT", "FINGER_3_PORT", "FINGER_4_PORT")
 BAUD = 115200
 LIMITS_MM = (-30.0, 0.0)
 HOME_DISPLACEMENT_MM = -1.0
-CALIBRATION_FACTOR = 573.2622826433104
 GRAVITY_M_S2 = 9.81
 STEPS_PER_SECOND = 6400
 MAX_SPEED_MM_S = 0.375
@@ -33,16 +32,6 @@ HOME_SETTLE_S = 2.0
 HOME_WAIT_TIMEOUT_S = 120.0
 MOVE_WAIT_TIMEOUT_S = 300.0
 DISPLACEMENT_TOLERANCE_MM = 0.01
-# pescador2 sets 30000. The demo calls touch with 7500. The library default is 2 * g.
-# None of those is applied until the edge contract names the unit.
-TOUCH_THRESHOLD_CANDIDATES = (30000, 7500)
-
-CORRECTIONS: dict[int, tuple[float, float]] = {
-    0: (1.0453861330027523, -717.008056157306),
-    1: (0.8792176759765562, -3546.5827171758337),
-    2: (1.0266252637365454, -823.8747617486401),
-    3: (0.9109718487428711, -1188.2464990482106),
-}
 
 
 def corrected_counts(raw: float, slope: float, intercept: float) -> float:
@@ -52,10 +41,14 @@ def corrected_counts(raw: float, slope: float, intercept: float) -> float:
     return (float(raw) - float(intercept)) / float(slope)
 
 
-def force_newton(raw: float, slope: float, intercept: float, baseline: float) -> float:
-    """Newtons from the written calibration. The threshold unit is still unresolved."""
+def force_newton(
+    raw: float, slope: float, intercept: float, baseline: float, calibration_factor: float
+) -> float:
+    """Newtons from the channel correction and the sensor calibration factor."""
+    if calibration_factor == 0:
+        raise ValueError("calibration_factor is zero")
     corrected = corrected_counts(raw, slope, intercept)
-    return (corrected - float(baseline)) / CALIBRATION_FACTOR * GRAVITY_M_S2
+    return (corrected - float(baseline)) / float(calibration_factor) * GRAVITY_M_S2
 
 
 def parse_sample(line: str) -> dict:
@@ -90,11 +83,11 @@ def rpm_for_speed(speed_mm_s: float, steps_per_second: int = STEPS_PER_SECOND) -
     return int(speed_mm_s * steps_per_second)
 
 
-def move_command(to_mm: float, rpm: int) -> str:
+def move_command(to_mm: float, rpm: int, limits_mm: tuple[float, float] = LIMITS_MM) -> str:
     """Displacement command, including the CR LF the board is written with."""
-    low, high = LIMITS_MM
+    low, high = limits_mm
     if to_mm < low or to_mm > high:
-        raise ValueError(f"Target {to_mm} mm is outside {LIMITS_MM}")
+        raise ValueError(f"Target {to_mm} mm is outside {tuple(limits_mm)}")
     return f"G {round(float(to_mm), 2)} {int(rpm)}\r\n"
 
 
@@ -105,12 +98,29 @@ def home_command() -> str:
 class Finger:
     """One actuator. The reader stores the latest sample. Force stop is not applied here."""
 
-    def __init__(self, port_name: str, channel: int) -> None:
-        if channel not in CORRECTIONS:
-            raise ValueError(f"Channel {channel} is not one of {tuple(CORRECTIONS)}")
+    def __init__(
+        self,
+        port_name: str,
+        channel: int,
+        *,
+        slope: float,
+        intercept: float,
+        calibration_factor: float,
+        limits_mm: tuple[float, float] = LIMITS_MM,
+    ) -> None:
+        if slope == 0:
+            raise ValueError(f"Channel {channel} correction slope is zero")
+        if calibration_factor == 0:
+            raise ValueError("calibration_factor is zero")
+        low, high = limits_mm
+        if low > high:
+            raise ValueError(f"limits_mm {tuple(limits_mm)} has low above high")
         self.port_name = port_name
         self.channel = channel
-        self.slope, self.intercept = CORRECTIONS[channel]
+        self.slope = float(slope)
+        self.intercept = float(intercept)
+        self.calibration_factor = float(calibration_factor)
+        self.limits_mm = (float(low), float(high))
         self.baseline = 0.0
         self._serial: serial.Serial | None = None
         self._latest: dict | None = None
@@ -189,10 +199,10 @@ class Finger:
             ValueError: If the target or speed is outside the actuator range.
             RuntimeError: If the reported displacement does not arrive in time.
         """
-        command = move_command(to_mm, rpm_for_speed(speed_mm_s))
+        command = move_command(to_mm, rpm_for_speed(speed_mm_s), self.limits_mm)
         self.write_command(command)
         displacement = self._wait_displacement(to_mm, MOVE_WAIT_TIMEOUT_S)
-        self.write_command(move_command(displacement, rpm_for_speed(speed_mm_s)))
+        self.write_command(move_command(displacement, rpm_for_speed(speed_mm_s), self.limits_mm))
         sample = self.latest() or {"channel": self.channel}
         sample["channel"] = self.channel
         sample["displacement_mm"] = displacement
@@ -225,6 +235,7 @@ class Finger:
                     self.slope,
                     self.intercept,
                     self.baseline,
+                    self.calibration_factor,
                 )
                 sample["channel"] = self.channel
                 self._latest = sample
@@ -243,12 +254,31 @@ class Finger:
 
 
 class ParallelFingers:
-    """Channels 0–3 in port order."""
+    """Channels 0 upward in port order. One ``(slope, intercept)`` correction per port."""
 
-    def __init__(self, ports: list[str]) -> None:
-        if len(ports) != 4:
-            raise ValueError(f"Expected 4 finger ports, got {len(ports)}")
-        self.fingers = [Finger(port, channel) for channel, port in enumerate(ports)]
+    def __init__(
+        self,
+        ports: list[str],
+        *,
+        corrections: list[tuple[float, float]],
+        calibration_factor: float,
+        limits_mm: tuple[float, float] = LIMITS_MM,
+    ) -> None:
+        if not ports:
+            raise ValueError("No finger ports")
+        if len(corrections) != len(ports):
+            raise ValueError(f"Expected {len(ports)} corrections, got {len(corrections)}")
+        self.fingers = [
+            Finger(
+                port,
+                channel,
+                slope=slope,
+                intercept=intercept,
+                calibration_factor=calibration_factor,
+                limits_mm=limits_mm,
+            )
+            for channel, (port, (slope, intercept)) in enumerate(zip(ports, corrections))
+        ]
 
     def connect(self) -> None:
         for finger in self.fingers:
@@ -259,24 +289,19 @@ class ParallelFingers:
             finger.disconnect()
 
     def finger(self, channel: int) -> Finger:
-        if channel not in CORRECTIONS:
-            raise ValueError(f"Channel {channel} is not one of 0, 1, 2, 3")
+        if not 0 <= channel < len(self.fingers):
+            raise ValueError(f"Channel {channel} is not one of 0 to {len(self.fingers) - 1}")
         return self.fingers[channel]
 
 
 __all__ = [
-    "AXIS",
     "BAUD",
-    "CALIBRATION_FACTOR",
     "COMMUNICATION",
-    "CORRECTIONS",
     "Finger",
     "HOME_DISPLACEMENT_MM",
     "LIMITS_MM",
-    "PORT_ENVS",
     "ParallelFingers",
     "STEPS_PER_SECOND",
-    "TOUCH_THRESHOLD_CANDIDATES",
     "corrected_counts",
     "force_newton",
     "home_command",

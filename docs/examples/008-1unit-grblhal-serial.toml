@@ -1,0 +1,51 @@
+# Example contract for gantry 008-1unit-grblhal-serial.
+# Used as: Photoreactor (UV qubot).
+# Reference values only. A site edge copies this to contracts/<version>.toml,
+# fills every blank, and keeps machine_id and the port env names from its
+# .env.example.
+#
+# Photoreactor (UV qubot). Limits key: `photoreactor`.
+# Frame travel is X −300 to 300, Y −199 to 0, Z −78 to 0. Y travel is 199 mm,
+# inside the 300 mm allowed for one unit. X is −300 to 300, a span of 600 mm,
+# which is past that allowance. The uploaded X range is kept and flagged for
+# correction.
+
+version = "1"
+machine_id = ""
+gantry = "008-1unit-grblhal-serial"
+effectors = ["orion-4ch-led"]
+home_on_startup = ""
+soft_limits = "none"
+
+[frame]
+axes = ["X", "Y", "Z"]
+hardware_limits = { X = [-300, 300], Y = [-199, 0], Z = [-78, 0] }
+default_deck = { rows = 2, cols = 2 }
+
+# Safety text and confirm are filled per edge.
+[commands.home]
+summary = ""
+hazards = []
+requires = ""
+forbidden_when = ""
+confirm = ""
+
+[commands.move_absolute]
+summary = ""
+hazards = []
+requires = ""
+forbidden_when = ""
+confirm = ""
+
+[commands.move_relative]
+summary = ""
+hazards = []
+requires = ""
+forbidden_when = ""
+confirm = ""
+
+# Serial port env: LED_PORT. 9600 baud, 1 s timeout. A force_threshold value
+# appears on one lamp config and is not used.
+[effector.orion-4ch-led]
+baud = 9600
+timeout_s = 1.0

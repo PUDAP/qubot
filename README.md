@@ -1,36 +1,41 @@
 # qubot
 
-One Python package, `qubot`, with the gantry and end-effector drivers for building a PUDA qubot edge. Nothing in this repository is a running edge. Agents start from [docs/building-an-edge.md](docs/building-an-edge.md). The split is explained in [MODULARIZATION.md](MODULARIZATION.md). Changes are recorded in [CHANGELOG.md](CHANGELOG.md).
+One Python package, `qubot`, with the gantry and end-effector drivers for building a PUDA qubot edge. It holds no machine settings: each edge imports qubot and configures it from its own contract. Nothing in this repository is a running edge. Agents start from [docs/building-an-edge.md](docs/building-an-edge.md). The split is explained in [MODULARIZATION.md](MODULARIZATION.md). Changes are recorded in [CHANGELOG.md](CHANGELOG.md).
 
-- No `MACHINE_ID`, NATS servers, host addresses, serial-device paths, container config, or `.env`. A site edge's `.env.example` stays placeholders.
+- No `MACHINE_ID`, NATS servers, host addresses, serial-device paths, frame limits, calibration, container config, or `.env`. A site edge's `.env.example` stays placeholders.
 - Code lives in `src/qubot/`. One `pyproject.toml` at the root; gantries and end effectors are modules, not separate packages.
 - `qubot.gantry.grbl`, `qubot.gantry.grbl_ws`, `qubot.gantry.reprap_http` are the transports, shared by every gantry.
-- `qubot.gantry.frames.g{serial}` holds one gantry's frame limits, axes, and default deck. `qubot.end_effector.<name>` is one toolhead.
+- `qubot.gantry.Frame` is the frame type. The edge builds it from its contract `[frame]` table: axes, hardware limits, default deck, and optional home order and firmware checks.
+- `qubot.end_effector.<name>` is one toolhead driver. Calibration (servo pulses, waypoints, delays, force corrections, pipette pacing) is passed in by the edge from `[effector.<name>]`.
 - `qubot.geometry` is the shared position, deck, and labware module. `qubot.edgekit` loads a numbered contract and refuses to start an edge until a filled local `.env` exists.
-- Contracts name gantries `{serial}-{size}-{bus}`. Serials `001` to `004` are provisional labels for the first build, not recorded asset tags. `005` to `009` continue from the gantry limits file. `005` is 8 units, arranged 2 along Y by 4 along X.
-- Each gantry `frames/g{serial}.toml` leaves safety, confirm, and startup homing unset. The edge contract fills them.
-- Each gantry has a default deck of one 2x2 block per unit. Calibrated holder positions belong to the site edge.
+- [docs/examples/](docs/examples/) has one reference contract per known gantry, `{serial}-{size}-{bus}.toml`, with the frame and calibration values from the machines built so far, and [edge_config.py](docs/examples/edge_config.py) showing how an edge imports and configures qubot from it. Serials `001` to `004` are provisional labels, not recorded asset tags.
+- Safety text, confirm, and startup homing are blank in the examples. Each edge contract fills them.
 - Finished edges are not stored on `main`. For an edge built before the qubot modularization and the monorepo restructuring, use the `legacy-edges` branch.
 
 ```python
+from qubot.edgekit import load_contract
+from qubot.gantry import Frame
 from qubot.gantry.grbl import GrblHALController
-from qubot.gantry.frames import g005
-from qubot.end_effector.rline_50_1000 import connect
-from qubot.geometry import Position
-```
+from qubot.end_effector.rotating_vacuum_gripper import RotatingVacuumGripper
 
-Contract names resolve with `qubot.gantry.frames.load("005-8unit-grblhal-serial")` and `qubot.end_effector.load("rline-50-1000")`.
+contract = load_contract(edge_dir)
+frame = Frame.from_dict(contract["frame"])
+gantry = GrblHALController(port_name=os.environ["GANTRY_PORT"])
+gripper = RotatingVacuumGripper(**contract["effector"]["rotating-vacuum-gripper"])
+# after gantry.connect():
+frame.apply_axis_limits(gantry, contract.get("soft_limits"))
+```
 
 ## Build a site edge
 
-Fill [CONTRACT.md](CONTRACT.md), then scaffold the edge service from [edge-python-template](https://github.com/PUDAP/edge-python-template). Keep the edge directory out of this repository and put it in the site monorepo's `edges/`.
+Fill [CONTRACT.md](CONTRACT.md), starting from the matching file in [docs/examples/](docs/examples/), then scaffold the edge service from [edge-python-template](https://github.com/PUDAP/edge-python-template). Keep the edge directory out of this repository and put it in the site monorepo's `edges/`.
 
 ```bash
 python3 scripts/check_contract.py path/to/edge/contracts/1.toml
 python3 scripts/vendor_edge.py path/to/edge/contracts/1.toml path/to/edge
 ```
 
-`vendor_edge.py` copies the `qubot` package into `path/to/edge/vendor/qubot`, points the edge's `[tool.uv.sources]` at it, and writes `vendor/REVISION` with the commit and the contract's gantry and effector modules. The edge lists `qubot` in its dependencies. It does not build an image or start a container. From the edge directory, generate the lock with `uv lock`, then build only when that edge is allowed to move.
+`vendor_edge.py` copies the `qubot` package into `path/to/edge/vendor/qubot`, points the edge's `[tool.uv.sources]` at it, and writes `vendor/REVISION` with the commit and the contract's effector modules. The edge lists `qubot` in its dependencies. It does not build an image or start a container. From the edge directory, generate the lock with `uv lock`, then build only when that edge is allowed to move.
 
 Attaching another toolhead writes the next contract and refreshes `vendor/`. It also does not build or remove an image:
 
@@ -40,9 +45,11 @@ python3 scripts/attach_toolhead.py path/to/edge a-axis-capper
 
 `.env.example` is placeholders only. If the user supplies this host's `.env`, copy it with `python3 scripts/accept_host_env.py path/to/edge path/to.env`. Otherwise the edge refuses to start until `.env` exists and its required values are filled.
 
-## Gantries
+## Example gantries
 
-| Package | Where it has been used |
+Reference contracts in `docs/examples/`. These are machines, not modules.
+
+| Example | Where it has been used |
 |---|---|
 | `001-1unit-grbl-serial` | miniqubot |
 | `002-1unit-reprap-http` | capper, then syringequbot |
@@ -56,7 +63,9 @@ python3 scripts/attach_toolhead.py path/to/edge a-axis-capper
 
 ## End effectors
 
-| Package | Where it has been used |
+Contract name; module is `qubot.end_effector.<name with underscores>`.
+
+| Effector | Where it has been used |
 |---|---|
 | `rline-50-1000` | pipqubot-mof, then pipqubot-xl. |
 | `rline-50-1000-multistep` | PESCador pipette. Same 50-1000 µL body, with calibrated multistep aspirate and dispense speed. |

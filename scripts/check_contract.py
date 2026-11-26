@@ -1,4 +1,4 @@
-"""Refuse a contract that is incomplete or outside the frame.
+"""Refuse a contract that is incomplete, outside its frame, or badly calibrated.
 
 Gantries and end effectors are modules of the ``qubot`` package in ``src/``. Pass one or more filled
 contract files. A file at ``<edge>/contracts/<version>.toml`` is also checked
@@ -15,10 +15,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-# These three imports are stdlib-only, so the check runs without pyserial.
+# These imports are stdlib-only, so the check runs without pyserial.
 from qubot import end_effector  # noqa: E402
 from qubot.end_effector import rline as rline_catalog  # noqa: E402
-from qubot.gantry import frames  # noqa: E402
+from qubot.gantry.frame import Frame  # noqa: E402
 
 
 def _locked_model(effector: str) -> str | None:
@@ -93,23 +93,67 @@ def check_files(paths: list[Path], errors: list[str]) -> None:
         _check_one(label, contract, errors)
 
 
+def _effector_block(label: str, contract: dict, effector: str, errors: list[str]) -> dict | None:
+    body = contract.get("effector", {}).get(effector)
+    if not isinstance(body, dict):
+        errors.append(f"{label}: {effector} contract block [effector.{effector}] is missing")
+        return None
+    return body
+
+
+def _check_configured(label: str, contract: dict, effector: str, errors: list[str]) -> None:
+    """Build the effector from its contract block, so a bad calibration fails here, not at startup."""
+    if effector == "a-axis-capper":
+        from qubot.end_effector.a_axis_capper import Capper as factory
+    elif effector == "rotating-vacuum-gripper":
+        from qubot.end_effector.rotating_vacuum_gripper import RotatingVacuumGripper as factory
+    elif effector == "vacuum-chamber":
+        from qubot.end_effector.vacuum_chamber import Chamber as factory
+    elif effector == "parallel-force-actuator":
+        body = _effector_block(label, contract, effector, errors)
+        if body is None:
+            return
+        corrections = body.get("corrections")
+        if not isinstance(corrections, list) or not corrections or any(
+            not isinstance(pair, list) or len(pair) != 2 or pair[0] == 0 for pair in corrections
+        ):
+            errors.append(f"{label}: {effector} corrections must be [slope, intercept] pairs with nonzero slope")
+        factor = body.get("calibration_factor")
+        if isinstance(factor, bool) or not isinstance(factor, (int, float)) or factor == 0:
+            errors.append(f"{label}: {effector} calibration_factor must be a nonzero number")
+        return
+    else:
+        return
+    body = _effector_block(label, contract, effector, errors)
+    if body is None:
+        return
+    try:
+        factory(**body)
+    except (TypeError, ValueError, KeyError) as exc:
+        errors.append(f"{label}: {effector} block is invalid: {exc}")
+
+
 def _check_one(label: str, contract: dict, errors: list[str]) -> None:
     machine_id = str(contract.get("machine_id", "")).strip()
     if not machine_id:
         errors.append(f"{label}: machine_id is empty")
-    gantry_name = contract.get("gantry")
-    if not gantry_name:
+    if not str(contract.get("gantry", "")).strip():
         errors.append(f"{label}: gantry is empty")
-        return
-    if str(gantry_name) not in frames.GANTRIES:
-        errors.append(f"{label}: missing gantry {gantry_name}")
-        return
-    frame = frames.load(str(gantry_name))
-    placeholders = frames.placeholders(str(gantry_name))
-    for command in placeholders.get("commands", {}):
-        filled = contract.get("commands", {}).get(command)
-        if not filled or not str(filled.get("summary", "")).strip():
-            errors.append(f"{label}: gantry placeholder {command} is empty")
+    frame = None
+    if not isinstance(contract.get("frame"), dict):
+        errors.append(f"{label}: [frame] is missing; the edge configures its gantry frame there")
+    else:
+        try:
+            frame = Frame.from_dict(contract["frame"])
+        except (TypeError, ValueError, KeyError) as exc:
+            errors.append(f"{label}: [frame] is invalid: {exc}")
+    commands = contract.get("commands", {})
+    if not isinstance(commands, dict) or not commands:
+        errors.append(f"{label}: [commands] is empty")
+        commands = {}
+    for command, filled in commands.items():
+        if not isinstance(filled, dict) or not str(filled.get("summary", "")).strip():
+            errors.append(f"{label}: command {command} summary is empty")
         elif not isinstance(filled.get("confirm"), bool):
             errors.append(f"{label}: {command} confirm must be a boolean")
     if not isinstance(contract.get("home_on_startup"), bool):
@@ -121,16 +165,15 @@ def _check_one(label: str, contract: dict, errors: list[str]) -> None:
     for effector in effectors:
         if str(effector) not in end_effector.EFFECTORS:
             errors.append(f"{label}: missing effector {effector}")
-    for effector in effectors:
+            continue
         if effector in {"rline-50-1000", "rline-50-1000-multistep"}:
             _check_rline_50_1000(label, contract, str(effector), errors)
-    limits = dict(frame.HARDWARE_LIMITS)
-    if contract.get("soft_limits") not in (None, "none"):
-        for axis, bounds in contract["soft_limits"].items():
-            low, high = bounds
-            hard_low, hard_high = limits[axis]
-            if low < hard_low or high > hard_high or low > high:
-                errors.append(f"{label}: soft {axis} {bounds} is outside {limits[axis]}")
+        _check_configured(label, contract, str(effector), errors)
+    if frame is not None and contract.get("soft_limits") not in (None, "none"):
+        try:
+            frame.check_limits(contract["soft_limits"])
+        except (TypeError, ValueError) as exc:
+            errors.append(f"{label}: soft limits: {exc}")
     if "autosampler-syringe" in effectors:
         try:
             length = float(contract["syringe_length_mm"])

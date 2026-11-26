@@ -7,8 +7,6 @@ from qubot.end_effector.rline_50_1000_multistep import (
     MICROLITERS_PER_STEP,
     MINIMUM_VOLUME_UL,
     MODEL,
-    RESPONSE_TIME_S,
-    STEP_RESOLUTION,
     connect,
 )
 from qubot.end_effector.rline_pace import interpolate_speed, plan_transfer
@@ -16,6 +14,8 @@ from qubot.end_effector.rline import RLINE_SPECS, RLineModel
 from qubot.end_effector.satorius_multistep import SatoriusController, SatoriusDeviceError
 
 PRESETS = (150, 265, 410, 650, 945, 1120)
+# The calibration measured on the PESCador pipette; an edge passes its own.
+CAL = {"step_resolution": 10, "response_time_s": 1.03}
 
 
 def test_selected_body_is_the_50_1000_microliter_pipette():
@@ -34,15 +34,13 @@ def test_selected_body_is_the_50_1000_microliter_pipette():
     assert spec.microliters_per_second == PRESETS
     assert RLINE_SPECS[RLineModel.UL_5_200].microliters_per_step == 0.5
     assert RLINE_SPECS[RLineModel.UL_100_5000].microliters_per_step == 10
-    assert STEP_RESOLUTION == 10
-    assert RESPONSE_TIME_S == 1.03
 
 
 def test_other_rline_models_are_refused():
     with pytest.raises(ValueError, match="50-1000"):
-        SatoriusController(port_name="unused", model=RLineModel.UL_5_200)
+        SatoriusController(port_name="unused", model=RLineModel.UL_5_200, **CAL)
     with pytest.raises(ValueError, match="50-1000"):
-        SatoriusController(port_name="unused", model=RLineModel.UL_100_5000)
+        SatoriusController(port_name="unused", model=RLineModel.UL_100_5000, **CAL)
 
 
 def test_connect_keeps_the_calibration_arguments():
@@ -59,6 +57,8 @@ def test_preset_speed_is_one_interval():
         410,
         microliters_per_step=2.5,
         speed_presets=PRESETS,
+        step_resolution=CAL["step_resolution"],
+        response_time_s=CAL["response_time_s"],
     )
     assert plan["n_intervals"] == 1
     assert plan["steps"] == [80]
@@ -72,6 +72,8 @@ def test_1000_ul_at_200_ul_s_uses_the_650_preset_in_three_chunks():
         200,
         microliters_per_step=2.5,
         speed_presets=PRESETS,
+        step_resolution=CAL["step_resolution"],
+        response_time_s=CAL["response_time_s"],
     )
     assert plan["preset_speed"] == 650
     assert plan["n_intervals"] == 3
@@ -91,6 +93,7 @@ def test_speed_between_presets_is_refused_when_the_pause_is_shorter_than_the_res
             microliters_per_step=2.5,
             speed_presets=PRESETS,
             response_time_s=1.03,
+            step_resolution=CAL["step_resolution"],
         )
 
 
@@ -102,6 +105,7 @@ def test_a_longer_response_time_refuses_a_plan_the_default_calibration_accepts()
             microliters_per_step=2.5,
             speed_presets=PRESETS,
             response_time_s=10,
+            step_resolution=CAL["step_resolution"],
         )
 
 
@@ -121,7 +125,7 @@ class ScriptedPipette(SatoriusController):
     """Records commands and advances a fake clock by 50 ms per exchange."""
 
     def __init__(self, **kwargs):
-        super().__init__(port_name="scripted", model=RLineModel.UL_50_1000, **kwargs)
+        super().__init__(port_name="scripted", model=RLineModel.UL_50_1000, **{**CAL, **kwargs})
         self.commands: list[tuple[str, str | None]] = []
         self._now = 0.0
         self._sleep = self._advance

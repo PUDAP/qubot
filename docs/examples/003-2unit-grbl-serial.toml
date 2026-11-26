@@ -1,6 +1,23 @@
-# Unset on purpose. The edge contract fills these.
-home_on_startup = ""
+# Example contract for gantry 003-2unit-grbl-serial.
+# Used as: pipqubot-mof.
+# Reference values only. A site edge copies this to contracts/<version>.toml,
+# fills every blank, and keeps machine_id and the port env names from its
+# .env.example.
+#
 
+version = "1"
+machine_id = ""
+gantry = "003-2unit-grbl-serial"
+effectors = ["rline-50-1000"]
+home_on_startup = ""
+soft_limits = "none"
+
+[frame]
+axes = ["X", "Y", "Z"]
+hardware_limits = { X = [0, 161.7], Y = [-444, 0], Z = [-175, 0] }
+default_deck = { rows = 4, cols = 2 }
+
+# Safety text and confirm are filled per edge.
 [commands.home]
 summary = ""
 hazards = []
@@ -63,3 +80,7 @@ hazards = []
 requires = ""
 forbidden_when = ""
 confirm = ""
+
+# Serial port env: SATORIUS_PORT. Axis: Z.
+[effector.rline-50-1000]
+model = "50-1000"

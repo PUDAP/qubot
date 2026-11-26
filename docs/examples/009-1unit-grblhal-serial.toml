@@ -1,0 +1,62 @@
+# Example contract for gantry 009-1unit-grblhal-serial.
+# Used as: EIS Qubot (electrochemical station).
+# Reference values only. A site edge copies this to contracts/<version>.toml,
+# fills every blank, and keeps machine_id and the port env names from its
+# .env.example.
+#
+# EIS Qubot (Electrochemical station). Limits key: `eis_qubot`.
+# Frame travel is X −300 to 300, Y −199 to 0, Z −300 to 300. Y travel is 199 mm,
+# inside the 300 mm allowed for one unit. X is −300 to 300, a span of 600 mm,
+# which is past that allowance. Z is the same −300 to 300 figure. The 300 mm
+# rule covers X and Y; Z is flagged with X. Both uploaded ranges are kept for
+# correction.
+
+version = "1"
+machine_id = ""
+gantry = "009-1unit-grblhal-serial"
+effectors = ["parallel-force-actuator"]
+home_on_startup = ""
+soft_limits = "none"
+
+[frame]
+axes = ["X", "Y", "Z"]
+hardware_limits = { X = [-300, 300], Y = [-199, 0], Z = [-300, 300] }
+default_deck = { rows = 2, cols = 2 }
+
+# Safety text and confirm are filled per edge.
+[commands.home]
+summary = ""
+hazards = []
+requires = ""
+forbidden_when = ""
+confirm = ""
+
+[commands.move_absolute]
+summary = ""
+hazards = []
+requires = ""
+forbidden_when = ""
+confirm = ""
+
+[commands.move_relative]
+summary = ""
+hazards = []
+requires = ""
+forbidden_when = ""
+confirm = ""
+
+# Four actuators, port envs FINGER_1_PORT to FINGER_4_PORT, channels 0-3.
+# corrections are (slope, intercept) per channel: corrected = (raw - b) / a.
+# Touch thresholds: pescador2 sets 30000, the demo uses 7500. Neither is a
+# plausible newton value, so threshold stops stay off until the unit is named.
+[effector.parallel-force-actuator]
+corrections = [
+    [1.0453861330027523, -717.008056157306],
+    [0.8792176759765562, -3546.5827171758337],
+    [1.0266252637365454, -823.8747617486401],
+    [0.9109718487428711, -1188.2464990482106],
+]
+calibration_factor = 573.2622826433104
+limits_mm = [-30.0, 0.0]
+force_threshold_units = "ASK"
+touch_threshold_candidates = [30000, 7500]

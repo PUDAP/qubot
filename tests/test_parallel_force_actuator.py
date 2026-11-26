@@ -2,6 +2,8 @@ import pytest
 
 from qubot.end_effector.parallel_force_actuator import (
     corrected_counts,
+    Finger,
+    ParallelFingers,
     force_newton,
     home_command,
     move_command,
@@ -12,7 +14,7 @@ from qubot.end_effector.parallel_force_actuator import (
 
 def test_correction_and_newton_formula():
     assert corrected_counts(100, 2, 10) == 45
-    assert force_newton(100, 2, 10, 0) == pytest.approx(45 / 573.2622826433104 * 9.81)
+    assert force_newton(100, 2, 10, 0, 573.2622826433104) == pytest.approx(45 / 573.2622826433104 * 9.81)
 
 
 def test_stream_line_and_commands():
@@ -28,3 +30,19 @@ def test_stream_line_and_commands():
 def test_limits_reject_a_target_past_minus_30():
     with pytest.raises(ValueError):
         move_command(-30.1, 100)
+
+
+def test_limits_can_be_configured():
+    assert move_command(-40.5, 100, (-50.0, 0.0)) == "G -40.5 100\r\n"
+
+
+def test_fingers_take_one_correction_per_port():
+    fingers = ParallelFingers(["a", "b"], corrections=[(1.0, 0.0), (2.0, 5.0)], calibration_factor=500.0)
+    assert fingers.finger(1).slope == 2.0
+    assert fingers.finger(1).intercept == 5.0
+    with pytest.raises(ValueError):
+        fingers.finger(2)
+    with pytest.raises(ValueError):
+        ParallelFingers(["a", "b"], corrections=[(1.0, 0.0)], calibration_factor=500.0)
+    with pytest.raises(ValueError):
+        Finger("a", 0, slope=0, intercept=0, calibration_factor=1)

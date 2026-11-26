@@ -1,0 +1,61 @@
+# Example contract for gantry 006-1unit-grblhal-serial.
+# Used as: Dancefloor (vacuum chamber).
+# Reference values only. A site edge copies this to contracts/<version>.toml,
+# fills every blank, and keeps machine_id and the port env names from its
+# .env.example.
+#
+# Dancefloor (Vacuum chamber). Limits key: `vacuum_chamber`.
+# Frame travel is X −116 to 0, Y −28 to 0, Z 0 to 0. Z has no travel. X travel
+# is 116 mm and Y travel is 28 mm, both inside the 300 mm allowed for one unit.
+# The combined pescador2 config says X low is −119. This frame keeps −116. The
+# chamber loading position X=−118 is outside this frame until that conflict is
+# confirmed. The limits file names a port placeholder `__dancefloor__`. That
+# value belongs in the site edge .env.
+
+version = "1"
+machine_id = ""
+gantry = "006-1unit-grblhal-serial"
+effectors = ["vacuum-chamber"]
+home_on_startup = ""
+soft_limits = "none"
+
+# pescador2 config X low is -119. This frame keeps the dancefloor-alone value
+# -116. The chamber loading position X=-118 is outside this frame until the
+# limit is confirmed.
+[frame]
+axes = ["X", "Y", "Z"]
+hardware_limits = { X = [-116, 0], Y = [-28, 0], Z = [0, 0] }
+default_deck = { rows = 2, cols = 2 }
+
+# Safety text and confirm are filled per edge.
+[commands.home]
+summary = ""
+hazards = []
+requires = ""
+forbidden_when = ""
+confirm = ""
+
+[commands.move_absolute]
+summary = ""
+hazards = []
+requires = ""
+forbidden_when = ""
+confirm = ""
+
+[commands.move_relative]
+summary = ""
+hazards = []
+requires = ""
+forbidden_when = ""
+confirm = ""
+
+# Dancefloor lid and vacuum valve on the gantry port. Robot frame.
+# Loading X = -118 is outside this frame's X low of -116. pescador2 uses -119.
+# Confirm the frame before moving to the loading position.
+[effector.vacuum-chamber]
+loading_position = [-118.0, 0.0, 0.0]
+close_waypoints = [[-3.0, 0.0, 0.0], [-3.0, -27.0, 0.0]]
+vacuum_on_delay_s = 5.0
+vacuum_off_delay_s = 5.0
+valve_on = "M8"
+valve_off = "M9"

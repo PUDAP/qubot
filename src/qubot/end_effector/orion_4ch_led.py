@@ -1,6 +1,6 @@
 """Four-channel LED line protocol.
 
-Four LED channels on one serial port, 9600 baud, timeout 1 s. Axis is none. Port placeholder `LED_PORT`.
+Four LED channels on one serial port, 9600 baud, timeout 1 s by default. The edge passes the port.
 
 One write sets every channel:
 
@@ -8,14 +8,12 @@ One write sets every channel:
 {p0};{p1};{p2};{p3}\n
 ```
 
-Off is `0;0;0;0\n`. The reply format is not known, so this package writes the line and does not wait for `ok`. A `force_threshold` value appears on one lamp config and is not used.
+Off is `0;0;0;0\n`. The reply format is not known, so this package writes the line and does not wait for `ok`.
 """
 
 import serial
 
-AXIS = ""
 COMMUNICATION = "serial"
-PORT_ENV = "LED_PORT"
 BAUD = 9600
 TIMEOUT_S = 1.0
 CHANNELS = (0, 1, 2, 3)
@@ -42,13 +40,15 @@ def power_line(powers: list[int]) -> str:
 class LedBoard:
     """Write-only board. The reply format is unresolved, so reads are not required."""
 
-    def __init__(self, port_name: str) -> None:
+    def __init__(self, port_name: str, *, baud: int = BAUD, timeout_s: float = TIMEOUT_S) -> None:
         self.port_name = port_name
+        self.baud = baud
+        self.timeout_s = timeout_s
         self._serial: serial.Serial | None = None
         self.powers = [0, 0, 0, 0]
 
     def connect(self) -> None:
-        self._serial = serial.Serial(self.port_name, baudrate=BAUD, timeout=TIMEOUT_S)
+        self._serial = serial.Serial(self.port_name, baudrate=self.baud, timeout=self.timeout_s)
 
     def disconnect(self) -> None:
         if self._serial is not None:
@@ -77,12 +77,10 @@ class LedBoard:
 
 
 __all__ = [
-    "AXIS",
     "BAUD",
     "CHANNELS",
     "COMMUNICATION",
     "LedBoard",
-    "PORT_ENV",
     "TIMEOUT_S",
     "power_line",
 ]

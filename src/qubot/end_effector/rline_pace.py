@@ -4,8 +4,7 @@ The rLine plunger has six fixed speeds. A requested speed that is not one of
 them is made from a faster preset, split into several moves. ``step_resolution``
 and ``response_time_s`` are manual calibrations: the smallest step count whose
 volume error is still tolerable, and the seconds one command round-trip is
-assumed to take. The defaults, 10 steps and 1.03 s, are the controllably
-Sartorius calibrations.
+assumed to take. Both are measured per pipette and passed in by the edge.
 
 The plan picks the feasible preset with the smallest area between the requested
 ramp and that preset. Each interval then lasts ``steps * uL_per_step / preset``
@@ -15,18 +14,14 @@ sum is ``volume / speed`` seconds.
 
 from __future__ import annotations
 
-STEP_RESOLUTION = 10
-RESPONSE_TIME_S = 1.03
-
-
 def interpolate_speed(
     volume: float,
     speed: float,
     *,
     speed_presets: tuple[float, ...],
     volume_resolution: float,
-    step_resolution: int = STEP_RESOLUTION,
-    time_resolution: float = RESPONSE_TIME_S,
+    step_resolution: int,
+    time_resolution: float,
 ) -> dict[str, float | int]:
     """Return the preset, interval count, step size, and per-interval pause.
 
@@ -112,8 +107,8 @@ def plan_transfer(
     *,
     microliters_per_step: float,
     speed_presets: tuple[int, ...] | tuple[float, ...],
-    step_resolution: int = STEP_RESOLUTION,
-    response_time_s: float = RESPONSE_TIME_S,
+    step_resolution: int,
+    response_time_s: float,
 ) -> dict:
     """Build a runnable plan or raise if this calibration cannot hit the speed."""
     if isinstance(speed_ul_s, bool) or not isinstance(speed_ul_s, (int, float)) or speed_ul_s <= 0:

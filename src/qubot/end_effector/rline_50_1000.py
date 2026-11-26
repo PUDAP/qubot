@@ -1,12 +1,10 @@
-"""One Sartorius rLine body, model 50-1000 uL, 2.5 uL/step. Axis Z, serial `SATORIUS_PORT`. No host address is stored here.
+"""One Sartorius rLine body, model 50-1000 uL, 2.5 uL/step. The edge passes the serial port.
 """
 
 from .rline import RLINE_SPECS, RLineModel
 from .satorius import SatoriusController
 
 MODEL = RLineModel.UL_50_1000
-AXIS = "Z"
-PORT_ENV = "SATORIUS_PORT"
 COMMUNICATION = "serial"
 MICROLITERS_PER_STEP = RLINE_SPECS[MODEL].microliters_per_step
 
@@ -17,11 +15,9 @@ def connect(port_name: str) -> SatoriusController:
 
 
 __all__ = [
-    "AXIS",
     "COMMUNICATION",
     "MICROLITERS_PER_STEP",
     "MODEL",
-    "PORT_ENV",
     "RLineModel",
     "SatoriusController",
     "connect",

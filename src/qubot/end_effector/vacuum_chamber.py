@@ -1,31 +1,62 @@
 """Vacuum-chamber valve and lid waypoints. Motion is performed by the gantry.
 
-Dancefloor lid and vacuum valve. The valve is `M8` / `M9` on the gantry port. There is no second port. On and off delays are 5 s.
+The valve is a coolant line on the gantry port; there is no second port. The edge
+configures the positions and delays for its chamber::
 
-Close waypoints, robot frame: (−3, 0, 0) then (−3, −27, 0). Loading position: (−118, 0, 0). Evacuation is refused unless the chamber is marked closed. Motion is refused while it is marked closed. Homing vents first when the chamber is not marked vented.
+    chamber = Chamber(
+        loading_position=(...),
+        close_waypoints=[(...), (...)],
+        vacuum_on_delay_s=...,
+        vacuum_off_delay_s=...,
+    )
 
-The loading position is outside gantry 006's X limit of −116. `loading_position` raises against that frame. The pescador2 config uses X low −119. The edge contract carries that question.
+Evacuation is refused unless the chamber is marked closed. Motion is refused
+while it is marked closed. Homing vents first when the chamber is not marked vented.
 """
 
-LOADING_POSITION = (-118.0, 0.0, 0.0)
-CLOSE_WAYPOINTS = ((-3.0, 0.0, 0.0), (-3.0, -27.0, 0.0))
-VACUUM_ON_DELAY_S = 5.0
-VACUUM_OFF_DELAY_S = 5.0
-VALVE_ON = "M8"
-VALVE_OFF = "M9"
-AXIS = ""
+from __future__ import annotations
+
+from typing import Sequence
+
 COMMUNICATION = "gantry"
-PORT_ENV = ""
+
+Point = tuple[float, float, float]
+
+
+def _point(value: Sequence[float]) -> Point:
+    if len(value) != 3:
+        raise ValueError(f"expected an (x, y, z) point, got {value!r}")
+    x, y, z = (float(item) for item in value)
+    return (x, y, z)
 
 
 class Chamber:
     """Closed and vented flags for one chamber. Starts open and vented."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        loading_position: Sequence[float],
+        close_waypoints: Sequence[Sequence[float]],
+        vacuum_on_delay_s: float,
+        vacuum_off_delay_s: float,
+        valve_on: str = "M8",
+        valve_off: str = "M9",
+    ) -> None:
+        if not close_waypoints:
+            raise ValueError("close_waypoints is empty")
+        if vacuum_on_delay_s < 0 or vacuum_off_delay_s < 0:
+            raise ValueError("vacuum delays must be zero or positive")
+        self.loading_position_mm = _point(loading_position)
+        self.close_path = tuple(_point(point) for point in close_waypoints)
+        self.vacuum_on_delay_s = float(vacuum_on_delay_s)
+        self.vacuum_off_delay_s = float(vacuum_off_delay_s)
+        self.valve_on = valve_on
+        self.valve_off = valve_off
         self.closed = False
         self.vented = True
 
-    def close_waypoints(self) -> list[tuple[float, float, float]]:
+    def close_waypoints(self) -> list[Point]:
         """Waypoints to close the lid.
 
         Raises:
@@ -33,7 +64,7 @@ class Chamber:
         """
         if self.closed:
             raise RuntimeError("Chamber is already closed")
-        return list(CLOSE_WAYPOINTS)
+        return list(self.close_path)
 
     def mark_closed(self) -> None:
         self.closed = True
@@ -47,12 +78,12 @@ class Chamber:
         if not self.closed:
             raise RuntimeError("Close the chamber before evacuating")
         self.vented = False
-        return VALVE_ON, VACUUM_ON_DELAY_S
+        return self.valve_on, self.vacuum_on_delay_s
 
     def vent(self) -> tuple[str, float]:
         """Valve line and delay for releasing vacuum."""
         self.vented = True
-        return VALVE_OFF, VACUUM_OFF_DELAY_S
+        return self.valve_off, self.vacuum_off_delay_s
 
     def require_motion(self) -> None:
         """Refuse travel while the lid is marked closed.
@@ -66,32 +97,20 @@ class Chamber:
     def mark_homed(self) -> None:
         self.closed = False
 
-    def loading_position(self, x_limits: tuple[float, float]) -> tuple[float, float, float]:
+    def loading_position(self, x_limits: tuple[float, float]) -> Point:
         """Return the loading position when it sits inside the frame X span.
 
         Raises:
-            RuntimeError: If X=−118 is outside the gantry frame.
+            RuntimeError: If the loading X is outside the gantry frame.
         """
         low, high = x_limits
-        x_mm = LOADING_POSITION[0]
+        x_mm = self.loading_position_mm[0]
         if x_mm < low or x_mm > high:
             raise RuntimeError(
                 f"Loading position X={x_mm} mm is outside frame X {(low, high)}. "
-                "pescador2 uses X low -119 and this gantry frame keeps -116. "
-                "Confirm the frame before moving to the loading position."
+                "Confirm the frame limits before moving to the loading position."
             )
-        return LOADING_POSITION
+        return self.loading_position_mm
 
 
-__all__ = [
-    "AXIS",
-    "CLOSE_WAYPOINTS",
-    "COMMUNICATION",
-    "Chamber",
-    "LOADING_POSITION",
-    "PORT_ENV",
-    "VACUUM_OFF_DELAY_S",
-    "VACUUM_ON_DELAY_S",
-    "VALVE_OFF",
-    "VALVE_ON",
-]
+__all__ = ["COMMUNICATION", "Chamber"]
