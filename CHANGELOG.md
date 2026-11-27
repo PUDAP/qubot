@@ -2,6 +2,10 @@
 
 Driver, geometry, labware, and skill changes are recorded here. A site edge does not append to this file; it pins the qubot version it uses.
 
+## Unreleased
+
+- `GrblTelnetController` (`from qubot.gantry import GrblTelnetController`): grblHAL over TCP port 23. Realtime bytes stay raw. Other commands use a line feed, and the reply includes the lines before `ok` so `$I` and `$$` match the serial controller. `connect()` does not home. Feed-hold sends `!` without taking the command lock.
+
 ## 0.1.1 - 2026-11-26
 
 - `RepRapSerialController` (`from qubot.gantry import RepRapSerialController`): RepRapFirmware over USB serial, from the `RepRapController` in the running first-edge's `qubot_drivers` 0.0.39. G-code with CR terminator, `G28` homing, absolute moves with relative moves converted internally, `M400` move wait, and async `M114` position. Used by the first gantry in puda-eletrochem.

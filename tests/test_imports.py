@@ -8,15 +8,29 @@ import qubot.gantry as gantry
 
 
 def test_gantry_short_names_are_the_module_classes():
-    from qubot.gantry import Frame, GrblHALController, GrblWSController, RepRapHTTPController
+    from qubot.gantry import (
+        Frame,
+        GrblHALController,
+        GrblTelnetController,
+        GrblWSController,
+        RepRapHTTPController,
+    )
     from qubot.gantry.frame import Frame as frame_cls
     from qubot.gantry.grbl import GrblHALController as grbl_cls
+    from qubot.gantry.grbl_telnet import GrblTelnetController as telnet_cls
     from qubot.gantry.grbl_ws import GrblWSController as ws_cls
     from qubot.gantry.reprap_http import RepRapHTTPController as reprap_cls
 
-    assert (Frame, GrblHALController, GrblWSController, RepRapHTTPController) == (
+    assert (
+        Frame,
+        GrblHALController,
+        GrblTelnetController,
+        GrblWSController,
+        RepRapHTTPController,
+    ) == (
         frame_cls,
         grbl_cls,
+        telnet_cls,
         ws_cls,
         reprap_cls,
     )
