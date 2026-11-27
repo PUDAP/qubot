@@ -38,10 +38,11 @@ def test_gantry_short_names_are_the_module_classes():
 
 def test_end_effector_short_names_and_pipette_modules():
     from qubot.end_effector import Capper, Chamber, LedBoard, ParallelFingers, RotatingVacuumGripper
-    from qubot.end_effector import rline_50_1000, rline_50_1000_multistep
+    from qubot.end_effector import rline_5_200, rline_50_1000, rline_50_1000_multistep
     from qubot.end_effector.rotating_vacuum_gripper import RotatingVacuumGripper as gripper_cls
 
     assert RotatingVacuumGripper is gripper_cls
+    assert rline_5_200.connect is not rline_50_1000.connect
     assert rline_50_1000.connect is not rline_50_1000_multistep.connect
     assert {Capper.__name__, Chamber.__name__, LedBoard.__name__, ParallelFingers.__name__} == {
         "Capper",

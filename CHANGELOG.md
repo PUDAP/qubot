@@ -4,6 +4,7 @@ Driver, geometry, labware, and skill changes are recorded here. A site edge does
 
 ## Unreleased
 
+- Add the importable Sartorius rLine 5-200 µL end effector as `qubot.end_effector.rline_5_200`, fixed to the existing 0.5 µL/step model specification and first used by IFIM Mini CVD (`mini-cvd-qubot`).
 - `GrblTelnetController` (`from qubot.gantry import GrblTelnetController`): grblHAL over TCP port 23. Realtime bytes stay raw. Other commands use a line feed, and the reply includes the lines before `ok` so `$I` and `$$` match the serial controller. `connect()` does not home. Feed-hold sends `!` without taking the command lock.
 - `GrblHALController` still starts at 3000 mm/min and still lifts to `SAFE_MOVE_HEIGHT` before XY when `apply_safe_z` is true. An edge can pass `feed` and `z_motion="directional"` (Z first only when rising, no safe-height detour). `read_hardware_feed_limits()` reads `$110`/`$111`/`$112`. `send_immediate()` writes one line without the command lock. The telnet controller forwards `feed` and `z_motion` and sends that immediate line as NETCON.
 - `Finger.move_to` takes an optional `stopping_force`. `None` does not stop on force. `LedBoard` powers are integers 0 to 255. `LedBoard`, `Chamber`, and `ParallelFingers` expose `snapshot()`. The multistep Sartorius controller exposes `read_telemetry()`, which skips the plunger query when the port is busy or closed.
