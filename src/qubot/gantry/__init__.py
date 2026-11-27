@@ -3,6 +3,7 @@
     from qubot.gantry import Frame, GrblHALController
 
 - ``GrblHALController``: GRBL 1.1 and grblHAL over serial (``qubot.gantry.grbl``).
+- ``GrblTelnetController``: grblHAL over TCP port 23 (``qubot.gantry.grbl_telnet``).
 - ``GrblWSController``: GRBL over WebSocket (``qubot.gantry.grbl_ws``).
 - ``RepRapHTTPController``: RepRapFirmware over HTTP (``qubot.gantry.reprap_http``).
 - ``RepRapSerialController``: RepRapFirmware over USB serial (``qubot.gantry.reprap_serial``).
@@ -22,6 +23,7 @@ from .frame import Frame
 _LAZY = {
     "GrblHALController": ".grbl",
     "GrblStatusReport": ".grbl",
+    "GrblTelnetController": ".grbl_telnet",
     "GrblWSController": ".grbl_ws",
     "RepRapHTTPController": ".reprap_http",
     "RepRapSerialController": ".reprap_serial",
@@ -29,6 +31,7 @@ _LAZY = {
 
 if TYPE_CHECKING:
     from .grbl import GrblHALController, GrblStatusReport
+    from .grbl_telnet import GrblTelnetController
     from .grbl_ws import GrblWSController
     from .reprap_http import RepRapHTTPController
     from .reprap_serial import RepRapSerialController

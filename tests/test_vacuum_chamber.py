@@ -46,6 +46,14 @@ def test_loading_position_is_outside_the_current_frame():
     assert make_chamber().loading_position((-119.0, 0.0)) == LOADING_POSITION
 
 
+def test_snapshot_reports_the_last_flags():
+    chamber = make_chamber()
+    assert chamber.snapshot() == {"closed": False, "vented": True, "source": "last_command"}
+    chamber.mark_closed()
+    chamber.evacuate()
+    assert chamber.snapshot()["vented"] is False
+
+
 def test_configuration_is_validated():
     with pytest.raises(ValueError):
         Chamber(loading_position=(0, 0), close_waypoints=[(0, 0, 0)], vacuum_on_delay_s=1, vacuum_off_delay_s=1)

@@ -97,6 +97,14 @@ class Chamber:
     def mark_homed(self) -> None:
         self.closed = False
 
+    def snapshot(self) -> dict:
+        """Lid and vent flags from the last close, home, evacuate, or vent command."""
+        return {
+            "closed": self.closed,
+            "vented": self.vented,
+            "source": "last_command",
+        }
+
     def loading_position(self, x_limits: tuple[float, float]) -> Point:
         """Return the loading position when it sits inside the frame X span.
 

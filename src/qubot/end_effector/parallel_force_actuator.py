@@ -12,7 +12,7 @@ Travel defaults to −30 mm to 0 mm. Correction is `(raw − intercept) / slope`
 
     fingers = ParallelFingers(ports, corrections=[(a0, b0), ...], calibration_factor=...)
 
-Force-threshold stops are not applied here. No finger stop command is known, so a gantry emergency stop does not stop these actuators.
+``move_to(..., stopping_force=None)`` does not stop on force. A number holds position when ``force_n`` reaches it. The library does not choose that number. No finger stop command is known, so a gantry emergency stop does not stop these actuators.
 """
 
 import threading
@@ -96,7 +96,7 @@ def home_command() -> str:
 
 
 class Finger:
-    """One actuator. The reader stores the latest sample. Force stop is not applied here."""
+    """One actuator. The reader stores the latest sample. Force stop is optional."""
 
     def __init__(
         self,
@@ -124,6 +124,7 @@ class Finger:
         self.baseline = 0.0
         self._serial: serial.Serial | None = None
         self._latest: dict | None = None
+        self._stopped_on_force = False
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         self._write_lock = threading.Lock()
@@ -190,22 +191,33 @@ class Finger:
         displacement = self._wait_displacement(HOME_DISPLACEMENT_MM, HOME_WAIT_TIMEOUT_S)
         return {"channel": self.channel, "displacement_mm": displacement}
 
-    def move_to(self, to_mm: float, speed_mm_s: float) -> dict:
-        """Move to a displacement. Does not stop on force.
+    def move_to(
+        self,
+        to_mm: float,
+        speed_mm_s: float,
+        stopping_force: float | None = None,
+    ) -> dict:
+        """Move to a displacement. Hold position if ``force_n`` reaches ``stopping_force``.
 
-        The threshold unit is unresolved, so contact is not detected here.
+        ``None`` does not stop on force. The comparison is ``force_n`` against the
+        absolute value of ``stopping_force``. The caller chooses the number and its unit.
 
         Raises:
             ValueError: If the target or speed is outside the actuator range.
             RuntimeError: If the reported displacement does not arrive in time.
         """
-        command = move_command(to_mm, rpm_for_speed(speed_mm_s), self.limits_mm)
-        self.write_command(command)
-        displacement = self._wait_displacement(to_mm, MOVE_WAIT_TIMEOUT_S)
-        self.write_command(move_command(displacement, rpm_for_speed(speed_mm_s), self.limits_mm))
+        rpm = rpm_for_speed(speed_mm_s)
+        self.write_command(move_command(to_mm, rpm, self.limits_mm))
+        displacement = self._wait_displacement(
+            to_mm,
+            MOVE_WAIT_TIMEOUT_S,
+            stopping_force=stopping_force,
+        )
+        self.write_command(move_command(displacement, rpm, self.limits_mm))
         sample = self.latest() or {"channel": self.channel}
         sample["channel"] = self.channel
         sample["displacement_mm"] = displacement
+        sample["stopped_on_force"] = self._stopped_on_force
         return sample
 
     def _read_loop(self) -> None:
@@ -240,12 +252,27 @@ class Finger:
                 sample["channel"] = self.channel
                 self._latest = sample
 
-    def _wait_displacement(self, target_mm: float, timeout_s: float) -> float:
+    def _wait_displacement(
+        self,
+        target_mm: float,
+        timeout_s: float,
+        stopping_force: float | None = None,
+    ) -> float:
+        self._stopped_on_force = False
         deadline = time.monotonic() + timeout_s
         while time.monotonic() < deadline:
             sample = self.latest()
-            if sample is not None and abs(sample["displacement_mm"] - target_mm) <= DISPLACEMENT_TOLERANCE_MM:
-                return float(sample["displacement_mm"])
+            if sample is not None:
+                force = sample.get("force_n")
+                if (
+                    stopping_force is not None
+                    and force is not None
+                    and float(force) >= abs(float(stopping_force))
+                ):
+                    self._stopped_on_force = True
+                    return float(sample["displacement_mm"])
+                if abs(sample["displacement_mm"] - target_mm) <= DISPLACEMENT_TOLERANCE_MM:
+                    return float(sample["displacement_mm"])
             time.sleep(0.01)
         raise RuntimeError(
             f"Finger {self.channel} on {self.port_name} did not reach "
@@ -292,6 +319,20 @@ class ParallelFingers:
         if not 0 <= channel < len(self.fingers):
             raise ValueError(f"Channel {channel} is not one of 0 to {len(self.fingers) - 1}")
         return self.fingers[channel]
+
+    def snapshot(self) -> dict:
+        """Latest parsed sample on each channel. A channel with no line yet is channel only.
+
+        ``fingers`` stays a list. ``channels`` is the same samples keyed by channel.
+        """
+        fingers = []
+        channels = {}
+        for finger in self.fingers:
+            sample = finger.latest()
+            item = {"channel": finger.channel} if sample is None else sample
+            fingers.append(item)
+            channels[str(finger.channel)] = dict(item)
+        return {"fingers": fingers, "channels": channels}
 
 
 __all__ = [

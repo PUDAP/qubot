@@ -102,7 +102,7 @@ Add the slot's calibrated origin to `get_well_position(...)` to get a machine co
 Answer every item before scaffolding. The answers go into the edge's `driver.py` (constants, `@safety`) and `main.py` (`Config` fields). Start from the matching reference driver if there is one.
 
 - `qubot-drivers` version or git ref the edge pins:
-- Gantry controller (`GrblHALController`, `GrblWSController`, `RepRapHTTPController`) and its port or host `Config` field:
+- Gantry controller (`GrblHALController`, `GrblTelnetController`, `GrblWSController`, `RepRapHTTPController`) and its port or host `Config` field:
 - `Frame`: axes, hardware limits, default deck, home order, expected firmware identity and settings:
 - Soft limits inside the frame, or none:
 - Startup homing: yes or no:
