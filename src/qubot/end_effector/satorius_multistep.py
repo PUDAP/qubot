@@ -28,6 +28,24 @@ class SatoriusDeviceError(Exception):
     """Custom exception raised when the Satorius device reports an error."""
 
 
+_PLUNGER_STEP = re.compile(r"^\x01?1dp(-?\d+)$", re.IGNORECASE)
+_STATUS_CODE = re.compile(r"^\x01?1ds(\d+)$", re.IGNORECASE)
+
+
+def _plunger_step(response: str) -> int:
+    match = _PLUNGER_STEP.fullmatch(response.strip())
+    if match is None:
+        raise SatoriusDeviceError(f"Invalid response format for position query: {response}")
+    return int(match.group(1))
+
+
+def _status_code(response: str) -> str:
+    match = _STATUS_CODE.fullmatch(response.strip())
+    if match is None:
+        raise SatoriusDeviceError(f"Invalid response format for status query: {response}")
+    return match.group(1)
+
+
 class SatoriusController(SerialController):
     """50-1000 uL rLine controller that can pace aspirate and dispense speed."""
 
@@ -503,6 +521,35 @@ class SatoriusController(SerialController):
         position = int(match.group(1))
         self._logger.info("** Position: %s steps **\n", position)
         return position
+
+    def read_telemetry(self) -> dict:
+        """Plunger and status when the port is free, plus the remembered tip and volume.
+
+        DP and DS are skipped when a command holds the serial port, or when the
+        port is closed. Tip presence is recorded by the driver, not sensed.
+        """
+        payload = {
+            "tracked_volume_ul": self.get_tracked_volume(),
+            "tip_attached": self.is_tip_attached(),
+            "plunger_step": None,
+            "status_code": None,
+            "status_message": None,
+        }
+        if not self.is_connected or not self._lock.acquire(blocking=False):
+            return payload
+        try:
+            self._send_command(self._build_command("DP"))
+            plunger = _plunger_step(self._read_response(timeout=1.0))
+            self._send_command(self._build_command("DS"))
+            code = _status_code(self._read_response(timeout=1.0))
+        except Exception:
+            return payload
+        finally:
+            self._lock.release()
+        payload["plunger_step"] = plunger
+        payload["status_code"] = code
+        payload["status_message"] = STATUS_CODES.get(code)
+        return payload
 
     def get_model(self) -> str:
         """Return the rLine model/catalog identifier reported by ``DM``."""

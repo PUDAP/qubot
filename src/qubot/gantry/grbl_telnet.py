@@ -22,8 +22,15 @@ def telnet_payload(command: str) -> bytes:
 class GrblTelnetController(GrblHALController):
     """One TCP session to a grblHAL controller. Port 23 is the historical NETCON port."""
 
-    def __init__(self, host: str, port: int = 23, timeout: float = 30.0):
-        super().__init__(port_name=host, timeout=int(timeout))
+    def __init__(
+        self,
+        host: str,
+        port: int = 23,
+        timeout: float = 30.0,
+        feed: int = GrblHALController.DEFAULT_FEEDRATE,
+        z_motion: str = "safe_height",
+    ):
+        super().__init__(port_name=host, timeout=int(timeout), feed=feed, z_motion=z_motion)
         self.host, self.port = _parse_address(host, port)
         self._timeout = float(timeout)
         self._telnet_connected = False
@@ -88,6 +95,20 @@ class GrblTelnetController(GrblHALController):
         except OSError as exc:
             raise RuntimeError(
                 "GRBL telnet feed-hold failed. The controller may still be moving."
+            ) from exc
+
+    def send_immediate(self, command: str) -> None:
+        """Write one NETCON line without the command lock and without waiting for ``ok``."""
+        sock = self._socket
+        if sock is None or not self._telnet_connected:
+            raise RuntimeError(
+                "GRBL telnet is not open. The controller may still be moving."
+            )
+        try:
+            sock.sendall(telnet_payload(command))
+        except OSError as exc:
+            raise RuntimeError(
+                "GRBL telnet immediate write failed. The controller may still be moving."
             ) from exc
 
     def _close_telnet(self) -> None:

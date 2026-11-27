@@ -46,3 +46,22 @@ def test_fingers_take_one_correction_per_port():
         ParallelFingers(["a", "b"], corrections=[(1.0, 0.0)], calibration_factor=500.0)
     with pytest.raises(ValueError):
         Finger("a", 0, slope=0, intercept=0, calibration_factor=1)
+
+
+def test_stopping_force_holds_and_none_does_not():
+    finger = Finger("unused", 0, slope=1, intercept=0, calibration_factor=1)
+    finger._latest = {"displacement_mm": -10.0, "force_n": 8000}
+    assert finger._wait_displacement(-30, 0.05, stopping_force=7500) == -10.0
+    assert finger._stopped_on_force is True
+    with pytest.raises(RuntimeError):
+        finger._wait_displacement(-30, 0.05, stopping_force=None)
+
+
+def test_snapshot_keeps_a_silent_channel():
+    fingers = ParallelFingers(["a", "b"], corrections=[(1.0, 0.0), (1.0, 0.0)], calibration_factor=1)
+    fingers.finger(1)._latest = {"channel": 1, "force_n": 1.5}
+    snapshot = fingers.snapshot()
+    assert snapshot["channels"]["0"] == {"channel": 0}
+    assert snapshot["channels"]["1"]["force_n"] == 1.5
+    snapshot["channels"]["1"]["force_n"] = 0
+    assert fingers.finger(1).latest()["force_n"] == 1.5

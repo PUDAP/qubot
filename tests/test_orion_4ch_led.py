@@ -13,3 +13,5 @@ def test_power_line_rejects_a_bad_frame():
         power_line([0, 0, 0])
     with pytest.raises(ValueError):
         power_line([0, 0, 0, -1])
+    with pytest.raises(ValueError):
+        power_line([0, 0, 0, 256])

@@ -17,13 +17,15 @@ COMMUNICATION = "serial"
 BAUD = 9600
 TIMEOUT_S = 1.0
 CHANNELS = (0, 1, 2, 3)
+POWER_MIN = 0
+POWER_MAX = 255
 
 
 def power_line(powers: list[int]) -> str:
     """Build the four-channel power line.
 
     Raises:
-        ValueError: If the channel count is not 4 or a power is negative.
+        ValueError: If the channel count is not 4 or a power is outside 0 to 255.
     """
     if len(powers) != 4:
         raise ValueError(f"LED board expects 4 powers, got {len(powers)}")
@@ -31,8 +33,10 @@ def power_line(powers: list[int]) -> str:
     for power in powers:
         if isinstance(power, bool) or not isinstance(power, (int, float)):
             raise ValueError(f"LED power must be a number, got {power!r}")
-        if int(power) != power or int(power) < 0:
-            raise ValueError(f"LED power must be a non-negative integer, got {power}")
+        if int(power) != power or int(power) < POWER_MIN or int(power) > POWER_MAX:
+            raise ValueError(
+                f"LED power must be an integer from {POWER_MIN} to {POWER_MAX}, got {power}"
+            )
         rendered.append(str(int(power)))
     return ";".join(rendered) + "\n"
 
@@ -60,7 +64,7 @@ class LedBoard:
 
         Raises:
             RuntimeError: If the port is not open.
-            ValueError: If a power is not a non-negative integer.
+            ValueError: If a power is not an integer from 0 to 255.
         """
         line = power_line([p0, p1, p2, p3])
         port = self._serial
@@ -74,6 +78,10 @@ class LedBoard:
     def off(self) -> str:
         """Write zeros to all four channels."""
         return self.set_powers(0, 0, 0, 0)
+
+    def snapshot(self) -> dict:
+        """Last powers written. The board does not report its output."""
+        return {"powers": list(self.powers), "source": "last_command"}
 
 
 __all__ = [

@@ -83,6 +83,7 @@ class GrblHALController(SerialController):
         timeout: int = SerialController.DEFAULT_TIMEOUT,
         feed: int = DEFAULT_FEEDRATE,
         z_feed: int = MAX_Z_FEED_RATE,
+        z_motion: str = "safe_height",
     ):
         """
         Initialize the G-code controller.
@@ -114,6 +115,12 @@ class GrblHALController(SerialController):
         self._current_position = Position(x=0.0, y=0.0, z=0.0)
         self._feed: int = feed
         self._z_feed: int = z_feed
+        self._max_feedrate: int = self.MAX_FEEDRATE
+        if z_motion not in {"safe_height", "directional"}:
+            raise ValueError(
+                f"z_motion must be 'safe_height' or 'directional', got {z_motion!r}"
+            )
+        self._z_motion = z_motion
 
         # Initialize axis limits with default values
         self._axis_limits: Dict[str, AxisLimits] = {
@@ -145,15 +152,15 @@ class GrblHALController(SerialController):
             self._logger.error(error_msg)
             raise ValueError(error_msg)
 
-        if new_feed > self.MAX_FEEDRATE:
+        if new_feed > self._max_feedrate:
             self._logger.warning(
                 "Requested feed rate (%s) exceeds maximum (%s). "
                 "Setting feed rate to maximum: %s.",
                 new_feed,
-                self.MAX_FEEDRATE,
-                self.MAX_FEEDRATE,
+                self._max_feedrate,
+                self._max_feedrate,
             )
-            self._feed = self.MAX_FEEDRATE
+            self._feed = self._max_feedrate
         else:
             self._feed = new_feed
             self._logger.debug("Feed rate set to: %s mm/min.", self._feed)
@@ -352,6 +359,63 @@ class GrblHALController(SerialController):
         port.write(b"!")
         port.flush()
 
+    def send_immediate(self, command: str) -> None:
+        """Write one line without the command lock and without waiting for ``ok``.
+
+        Emergency stop uses this for a valve line while a move may still hold
+        ``execute``. GRBL queues that line. It does not run during a feed hold
+        until the hold is cleared.
+        """
+        port = self._serial
+        if port is None or not getattr(port, "is_open", False):
+            raise RuntimeError(
+                "GRBL serial port is not open. The controller may still be moving."
+            )
+        port.write(self._build_command(command).encode("ascii"))
+        port.flush()
+
+    def read_hardware_feed_limits(self) -> int:
+        """Set the XY ceiling from GRBL ``$110`` and ``$111``, in mm/min.
+
+        The ceiling is the lower of the two positive rates. If neither is
+        published, the ceiling stays 3000 mm/min. A positive ``$112`` caps the
+        Z feed. The current XY feed is lowered only when it is above the ceiling.
+
+        Returns:
+            int: The XY ceiling now in force.
+        """
+        try:
+            response = self.execute("$$")
+        except Exception:
+            self._logger.warning(
+                "Could not read GRBL max rates. XY feed ceiling stays %s mm/min.",
+                self._max_feedrate,
+            )
+            return self._max_feedrate
+        rates: Dict[str, float] = {}
+        for line in str(response).splitlines():
+            text = line.strip()
+            for axis, key in (("X", "$110"), ("Y", "$111"), ("Z", "$112")):
+                if not text.startswith(f"{key}="):
+                    continue
+                try:
+                    rates[axis] = float(text.split("=", 1)[1].split()[0])
+                except ValueError:
+                    continue
+        xy = [rates[axis] for axis in ("X", "Y") if rates.get(axis, 0) > 0]
+        self._max_feedrate = int(min(xy)) if xy else self.MAX_FEEDRATE
+        if self._feed > self._max_feedrate:
+            self._feed = self._max_feedrate
+        z_rate = rates.get("Z", 0)
+        if z_rate > 0 and self._z_feed > z_rate:
+            self._z_feed = int(z_rate)
+        self._logger.info(
+            "XY feed ceiling is %s mm/min. Feed is %s mm/min.",
+            self._max_feedrate,
+            self._feed,
+        )
+        return self._max_feedrate
+
     def home(self, axis: Optional[str] = None, *, verify_origin: bool = False) -> None:
         """
         Home one or all axes ($H command).
@@ -510,6 +574,47 @@ class GrblHALController(SerialController):
             apply_safe_z=apply_safe_z,
         )
 
+    def _execute_directional_move(
+        self,
+        position: Position,
+        feed: int,
+        *,
+        needs_x_move: bool,
+        needs_y_move: bool,
+        needs_z_move: bool,
+        timeout: Optional[int] = None,
+    ) -> Position:
+        """Send an absolute G1. Z goes first only when the target is higher.
+
+        A move that rises sends Z, then XY. A move that descends sends XY,
+        then Z. The move does not detour to ``SAFE_MOVE_HEIGHT``.
+        """
+        self._execute_checked("G90", timeout=timeout)
+        ascending = position.z > self._current_position.z + self.TOLERANCE
+        if needs_z_move and (ascending or not (needs_x_move or needs_y_move)):
+            self._execute_checked(f"G1 Z{position.z} F{self._z_feed}", timeout=timeout)
+            self._wait_for_move(timeout=timeout)
+            self._current_position.z = position.z
+            needs_z_move = False
+        if needs_x_move or needs_y_move:
+            move_cmd = "G1"
+            if needs_x_move:
+                move_cmd += f" X{position.x}"
+            if needs_y_move:
+                move_cmd += f" Y{position.y}"
+            move_cmd += f" F{feed}"
+            self._execute_checked(move_cmd, timeout=timeout)
+            self._wait_for_move(timeout=timeout)
+            if needs_x_move:
+                self._current_position.x = position.x
+            if needs_y_move:
+                self._current_position.y = position.y
+        if needs_z_move:
+            self._execute_checked(f"G1 Z{position.z} F{self._z_feed}", timeout=timeout)
+            self._wait_for_move(timeout=timeout)
+            self._current_position.z = position.z
+        return self._current_position
+
     def _execute_move(
         self,
         position: Position,
@@ -541,6 +646,16 @@ class GrblHALController(SerialController):
                 "Move command issued without any axis movement. Skipping transmission."
             )
             return
+
+        if self._z_motion == "directional":
+            return self._execute_directional_move(
+                position,
+                feed,
+                needs_x_move=needs_x_move,
+                needs_y_move=needs_y_move,
+                needs_z_move=needs_z_move,
+                timeout=timeout,
+            )
 
         # Validate generated waypoints before transmitting any command. The safe
         # Z lift is part of the move path and must remain inside configured limits.
