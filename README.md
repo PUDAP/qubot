@@ -94,6 +94,7 @@ Each controller is paired with a `Frame` (`from qubot.gantry import Frame`) that
 
 | End effector | Import | What it is | Link | Used on |
 |---|---|---|---|---|
+| Sartorius rLine 5-200 µL | `from qubot.end_effector import rline_5_200`, then `rline_5_200.connect(port)` | Pipette, 0.5 µL/step, six preset speeds. | Serial | IFIM Mini CVD (`mini-cvd-qubot`) |
 | Sartorius rLine 50-1000 µL | `from qubot.end_effector import rline_50_1000`, then `rline_50_1000.connect(port)` | Pipette, 2.5 µL/step, six preset speeds. | Serial | pipqubot-mof, pipqubot-xl |
 | Sartorius rLine 50-1000 µL, multistep | `from qubot.end_effector import rline_50_1000_multistep` | Same pipette, with any aspirate/dispense speed up to 1120 µL/s made from paced preset moves. | Serial | overkill2 |
 | A-axis capper | `from qubot.end_effector import Capper` | Capping tool driven by gantry axis A. | Gantry axis | pipqubot-xl |
@@ -103,7 +104,7 @@ Each controller is paired with a `Frame` (`from qubot.gantry import Frame`) that
 | Orion 4-channel LED | `from qubot.end_effector import LedBoard` | Four-channel UV LED board, write-only line protocol. | Serial, 9600 baud | photoreactor |
 | Parallel force actuators | `from qubot.end_effector import ParallelFingers` | Linear actuators with force sensing, one port each. | Serial, 115200 baud | eis-qubot |
 
-The two rLine pipettes are imported as modules because both define `connect` and `SatoriusController`. Lower-level pieces: `qubot.end_effector.satorius` / `satorius_multistep` (`SatoriusController`), `RLineModel` and `RLINE_SPECS` (rLine 5-200, 50-1000, 100-5000 µL spec table, `from qubot.end_effector import RLineModel`), and `qubot.serialcontroller` (`SerialController` base).
+The rLine pipettes are imported as modules because each defines `connect` and `SatoriusController`. Lower-level pieces: `qubot.end_effector.satorius` / `satorius_multistep` (`SatoriusController`), `RLineModel` and `RLINE_SPECS` (rLine 5-200, 50-1000, 100-5000 µL spec table, `from qubot.end_effector import RLineModel`), and `qubot.serialcontroller` (`SerialController` base).
 
 ## Labware
 

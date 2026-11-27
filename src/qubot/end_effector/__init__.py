@@ -10,10 +10,10 @@
 - ``ParallelFingers``, ``Finger``: force actuators (``qubot.end_effector.parallel_force_actuator``).
 - ``RLineModel``, ``RLINE_SPECS``: rLine spec table (``qubot.end_effector.rline``).
 
-The two rLine pipettes are used through their modules, because both define
+The rLine pipettes are used through their modules, because they define
 ``connect`` and ``SatoriusController``::
 
-    from qubot.end_effector import rline_50_1000, rline_50_1000_multistep
+    from qubot.end_effector import rline_5_200, rline_50_1000, rline_50_1000_multistep
 
 Everything loads on first use, so importing this package does not import ``serial``.
 """
@@ -34,10 +34,10 @@ _LAZY = {
     "RLineModel": ".rline",
     "RLINE_SPECS": ".rline",
 }
-_MODULES = ("rline_50_1000", "rline_50_1000_multistep")
+_MODULES = ("rline_5_200", "rline_50_1000", "rline_50_1000_multistep")
 
 if TYPE_CHECKING:
-    from . import rline_50_1000, rline_50_1000_multistep
+    from . import rline_5_200, rline_50_1000, rline_50_1000_multistep
     from .a_axis_capper import Capper
     from .autosampler_syringe import narrow_z
     from .orion_4ch_led import LedBoard
